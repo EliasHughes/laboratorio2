@@ -1,0 +1,41 @@
+# Python
+backend/.venv/
+backend/venv/
+**/__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+.mypy_cache/
+
+# Env y secretos
+.env
+.env.*
+!.env.example
+backend/.env
+frontend/.env
+
+# Node
+node_modules/
+**/node_modules/
+frontend/node_modules/
+frontend/dist/
+frontend/.vite/
+npm-debug.log*
+yarn-error.log*
+
+# IDE / OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+*.swp
+
+# Logs y local
+backend/logs/
+*.log
+*.db
+*.sqlite3
+
+# Coverage / build
+htmlcov/
+.coverage

@@ -1,0 +1,207 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+::-webkit-scrollbar-track {
+  background: #1a1411;
+}
+::-webkit-scrollbar-thumb {
+  background: #4a3728;
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #5c1a03;
+}
+
+body {
+  font-family: 'Inter', system-ui, sans-serif;
+  background-color: #1a1410;
+  color: #fafaf9; /* stone-50 */
+}
+
+.font-brand {
+  font-family: 'Cinzel', serif;
+}
+
+/* Mejora de contraste en inputs y tablas */
+input, select, textarea {
+  color: #fafaf9 !important;
+}
+
+/* Cards con un poco más de elevación */
+.bg-caribe-card {
+  box-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.25);
+}
+
+/* Login Yazoo — animaciones */
+@keyframes barrel-1 {
+  0%, 100% { transform: translate(0, 0) rotate(-4deg) scale(1); }
+  33% { transform: translate(12px, -28px) rotate(3deg) scale(1.04); }
+  66% { transform: translate(-8px, -14px) rotate(-2deg) scale(0.98); }
+}
+@keyframes barrel-2 {
+  0%, 100% { transform: translate(0, 0) rotate(3deg) scale(1); }
+  40% { transform: translate(-16px, -32px) rotate(-5deg) scale(1.05); }
+  70% { transform: translate(10px, -18px) rotate(2deg) scale(0.97); }
+}
+@keyframes barrel-3 {
+  0%, 100% { transform: translate(0, 0) rotate(-2deg); }
+  50% { transform: translate(18px, -36px) rotate(5deg); }
+}
+@keyframes barrel-4 {
+  0%, 100% { transform: translate(0, 0) rotate(2deg); }
+  50% { transform: translate(-20px, -30px) rotate(-6deg); }
+}
+@keyframes bottle-1 {
+  0%, 100% { transform: translateY(0) rotate(-3deg); }
+  50% { transform: translateY(-40px) rotate(4deg); }
+}
+@keyframes bottle-2 {
+  0%, 100% { transform: translateY(0) rotate(2deg); }
+  50% { transform: translateY(-48px) rotate(-5deg); }
+}
+@keyframes bottle-3 {
+  0%, 100% { transform: translateY(0) rotate(-1deg); }
+  50% { transform: translateY(-34px) rotate(3deg); }
+}
+@keyframes glow {
+  0%, 100% { opacity: 0.2; transform: scale(1); }
+  50% { opacity: 0.45; transform: scale(1.08); }
+}
+@keyframes glow-delay {
+  0%, 100% { opacity: 0.15; transform: scale(1); }
+  50% { opacity: 0.4; transform: scale(1.1); }
+}
+@keyframes fade-up {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  20%, 60% { transform: translateX(-10px); }
+  40%, 80% { transform: translateX(10px); }
+}
+
+.animate-barrel-1 { animation: barrel-1 7s ease-in-out infinite; }
+.animate-barrel-2 { animation: barrel-2 9s ease-in-out infinite; }
+.animate-barrel-3 { animation: barrel-3 8s ease-in-out infinite; }
+.animate-barrel-4 { animation: barrel-4 10s ease-in-out infinite; }
+.animate-bottle-1 { animation: bottle-1 6s ease-in-out infinite; }
+.animate-bottle-2 { animation: bottle-2 7.5s ease-in-out infinite; }
+.animate-bottle-3 { animation: bottle-3 5.5s ease-in-out infinite; }
+.animate-glow { animation: glow 5s ease-in-out infinite; }
+.animate-glow-delay { animation: glow-delay 6s ease-in-out infinite; }
+.animate-fade-up { animation: fade-up 0.75s ease-out both; }
+.animate-shake { animation: shake 0.45s ease; }
+
+.yazoo-sun {
+  background: radial-gradient(
+    circle,
+    rgba(201, 162, 39, 0.5) 0%,
+    rgba(160, 80, 30, 0.25) 35%,
+    transparent 70%
+  );
+}
+
+/* Tema contenido claro — overrides de tokens caribe */
+.bg-caribe-card {
+  background-color: #ffffff !important;
+  color: #1a120e !important;
+  border-color: #e6e2dc !important;
+}
+.bg-caribe-dark {
+  background-color: #f7f4ef !important;
+  color: #1a120e !important;
+}
+.border-caribe-border {
+  border-color: #e6e2dc !important;
+}
+.bg-caribe-hover {
+  background-color: #f3eee6 !important;
+}
+
+.bg-caribe-card .text-stone-50,
+.bg-caribe-card .text-stone-100,
+.bg-caribe-card .text-stone-200,
+.bg-caribe-dark .text-stone-50,
+.bg-caribe-dark .text-stone-100,
+.bg-caribe-dark .text-stone-200 {
+  color: #1a120e !important;
+}
+.bg-caribe-card .text-stone-300,
+.bg-caribe-card .text-stone-400,
+.bg-caribe-card .text-stone-500,
+.bg-caribe-dark .text-stone-300,
+.bg-caribe-dark .text-stone-400,
+.bg-caribe-dark .text-stone-500 {
+  color: #5c5046 !important;
+}
+.text-yazoo-gold,
+.text-amber-400 {
+  color: #c69038 !important;
+}
+
+aside.bg-caribe-card,
+aside .bg-caribe-card {
+  background-color: #1a120e !important;
+  color: #e6e2dc !important;
+}
+
+.yazoo-hero h2,
+.yazoo-hero .yazoo-hero-title,
+.yazoo-hero p.yazoo-hero-title {
+  color: #ffffff !important;
+}
+.yazoo-hero p {
+  color: #c9bfb3 !important;
+}
+.yazoo-hero p.kicker {
+  color: #dca54c !important;
+}
+
+main input,
+main select,
+main textarea,
+main option {
+  color: #1a120e !important;
+  background-color: #ffffff !important;
+}
+main select option {
+  color: #1a120e !important;
+  background-color: #ffffff !important;
+}
+main ::placeholder {
+  color: #8a8076 !important;
+  opacity: 1;
+}
+
+@media print {
+  aside, header, .print\\:hidden, button {
+    display: none !important;
+  }
+  main, body, #root {
+    background: #fff !important;
+    color: #000 !important;
+  }
+  .fixed {
+    position: static !important;
+    inset: auto !important;
+    background: transparent !important;
+    padding: 0 !important;
+  }
+}
+
+@media print {
+  body * { visibility: hidden !important; }
+  #print-coa, #print-coa * { visibility: visible !important; }
+  #print-coa {
+    position: absolute !important;
+    left: 0; top: 0; width: 100%;
+    background: #fff !important;
+    color: #000 !important;
+  }
+}
