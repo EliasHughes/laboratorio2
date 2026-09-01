@@ -1,37 +1,33 @@
 import axios from 'axios'
 
-const API_HOST = window.location.hostname
-const API_PORT = 8010
-
 const api = axios.create({
-  baseURL: `http://${API_HOST}:${API_PORT}/api/v1`,
-  timeout: 20000,
+  baseURL: import.meta.env.VITE_API_URL || '/api/v1',
+  timeout: 30000,
 })
 
 api.interceptors.request.use((config) => {
   const token = localStorage.getItem('token')
-  const url = String(config.url || '')
-  if (token && !url.includes('/auth/login')) {
+  if (token) {
+    config.headers = config.headers || {}
     config.headers.Authorization = `Bearer ${token}`
   }
   return config
 })
 
 api.interceptors.response.use(
-  (response) => response,
-  (error) => {
-    if (error.response?.status === 401) {
-      const url = String(error.config?.url || '')
-      if (!url.includes('/auth/login')) {
-        localStorage.removeItem('token')
-        localStorage.removeItem('user')
-        if (!window.location.pathname.includes('/login')) {
-          window.location.href = '/login'
-        }
+  (res) => res,
+  (err) => {
+    const status = err?.response?.status
+    const url = String(err?.config?.url || '')
+    if (status === 401 && !url.includes('/auth/login')) {
+      localStorage.removeItem('token')
+      localStorage.removeItem('user')
+      if (window.location.pathname !== '/login') {
+        window.location.assign('/login')
       }
     }
-    return Promise.reject(error)
-  }
+    return Promise.reject(err)
+  },
 )
 
 export default api

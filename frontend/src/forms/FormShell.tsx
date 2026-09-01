@@ -101,7 +101,7 @@ export default function FormShell({ code, title, storageKey, fields, onCancel, o
       </div>
       <div className="flex justify-end gap-2">
         <button type="button" className="px-3 py-1 text-sm" onClick={onCancel}>Cancelar</button>
-        <button type="button" className="px-3 py-1 text-sm border" onClick={print}>Imprimir</button>
+        <button type="button" className="px-3 py-1 text-sm border" data-yazoo-print="1" onClick={print}>Imprimir</button>
         <button type="button" className="px-4 py-1 text-sm rounded-full bg-[#DCA54C]" onClick={save}>Guardar</button>
       </div>
     </div>

@@ -10,6 +10,8 @@ class FormRecordCreate(BaseModel):
     data: Dict[str, Any] = Field(default_factory=dict)
     payload: Optional[Dict[str, Any]] = None
     status: str = "borrador"
+    lot_id: Optional[int] = None
+    lot_number: Optional[str] = None
 
 
 class FormRecordUpdate(BaseModel):
@@ -17,6 +19,8 @@ class FormRecordUpdate(BaseModel):
     data: Optional[Dict[str, Any]] = None
     payload: Optional[Dict[str, Any]] = None
     status: Optional[str] = None
+    lot_id: Optional[int] = None
+    lot_number: Optional[str] = None
 
 
 class FormRecordOut(BaseModel):
@@ -33,5 +37,7 @@ class FormRecordOut(BaseModel):
     updated_by_name: Optional[str] = None
     created_at: Optional[datetime] = None
     updated_at: Optional[datetime] = None
+    lot_id: Optional[int] = None
+    lot_number: Optional[str] = None
 
     model_config = ConfigDict(from_attributes=True)

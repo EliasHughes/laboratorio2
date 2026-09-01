@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react'
 
-type Props = { onCancel?: () => void; onSave?: (d: Record<string, string>) => void }
+type Props = { onCancel?: () => void; onSave?: (d: Record<string, any>) => void; initialData?: Record<string, any> }
 const KEY = 'form-y-fo-cc-030'
 
 const TIPOS = [
@@ -58,11 +58,10 @@ function load(): Record<string, any> {
   }
 }
 
-export default function InspeccionInsumosForm({ onCancel, onSave }: Props) {
+export default function InspeccionInsumosForm({ onCancel, onSave, initialData }: Props) {
   const initial = useMemo(() => {
-    const s = load()
-    return { fecha: s.fecha || today(), ...s }
-  }, [])
+    return { fecha: today(), ...(initialData || {}) }
+  }, [initialData])
   const [h, setH] = useState<Record<string, any>>(initial)
 
   const set = (k: string, v: any) => {
@@ -76,7 +75,6 @@ export default function InspeccionInsumosForm({ onCancel, onSave }: Props) {
 
   const save = () => {
     const data = { ...h, fecha: h.fecha || today() }
-    localStorage.setItem(KEY, JSON.stringify(data))
     onSave?.(data)
   }
 
@@ -390,7 +388,7 @@ export default function InspeccionInsumosForm({ onCancel, onSave }: Props) {
         <button type="button" onClick={onCancel}>
           Cancelar
         </button>
-        <button type="button" className="border px-3" onClick={print}>
+        <button type="button" className="border px-3" data-yazoo-print="1" onClick={print}>
           Imprimir
         </button>
         <button type="button" className="bg-[#DCA54C] px-4 py-1 rounded-full font-semibold" onClick={save}>

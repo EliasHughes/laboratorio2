@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 
 const KEY = 'form-y-fo-cc-004'
 const load = () => {
@@ -61,12 +61,72 @@ const BLOCKS: { g: string; rows: [string, string][] }[] = [
   },
 ]
 
-export default function ControlEnvasadoForm({ onCancel, onSave }: any) {
-  const [h, setH] = useState<any>(load())
+export function printControlEnvasado(h: Record<string, any> = {}) {
+  const v = (k: string) => h[k] || ''
+  const logo = `${window.location.origin}/yazoo.png`
+  const pv = (k: string) => H.map((n) => `<td>${v(k + '_' + n) || '&nbsp;'}</td>`).join('')
+  const rows = BLOCKS.map((b) =>
+    b.rows
+      .map(
+        ([k, l], i) =>
+          `<tr>${
+            i === 0
+              ? `<td rowspan="${b.rows.length}" style="writing-mode:vertical-rl;transform:rotate(180deg);font-weight:700">${b.g}</td>`
+              : ''
+          }<td style="text-align:left">${l}</td>${pv(k)}<td>${v(k + '_obs') || ''}</td></tr>`,
+      )
+      .join(''),
+  ).join('')
+
+  const w = window.open('', '_blank', 'width=1200,height=800')
+  if (!w) return
+  w.document.write(`<!DOCTYPE html><html><head><meta charset="utf-8"/><title>Y-FO-CC-004</title>
+    <style>
+      body{font-family:Arial;font-size:10px;color:#000;padding:12px}
+      table{border-collapse:collapse;width:100%;table-layout:fixed}
+      td,th{border:1px solid #000;padding:3px;vertical-align:middle}
+      .hdr{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px}
+      @media print{body{padding:0} img{print-color-adjust:exact;-webkit-print-color-adjust:exact}}
+    </style></head><body>
+    <div class="hdr">
+      <img src="${logo}" height="42" alt="Yazoo"/>
+      <div style="text-align:center;font-weight:700;font-size:16px">CONTROL DE ENVASADO</div>
+      <div style="text-align:right;font-size:10px">CODIGO: Y-FO-CC-004<br/>REV.: 06<br/>PAG.: 1 de 1</div>
+    </div>
+    <table>
+      <tr><td>GRADO ALC. (°GL): ${v('esp_grado')}</td><td colspan="2">PRODUCTO: ${v('producto')}</td></tr>
+      <tr><td>CAPACIDAD (ml): ${v('cap')}</td><td>LOTE DE ELABORACION: ${v('lote_elab')}</td><td>LINEA: ${v('linea')}</td></tr>
+      <tr><td>COLOR: ${v('esp_color')} Abs / %T</td><td>LOTE: ${v('lote')}</td><td>FECHA: ${v('fecha')}</td></tr>
+    </table>
+    <table>
+      <tr>
+        <th></th><th>ARRANQUE DE LINEA / HORA DE INSPECCIÓN</th>
+        ${H.map(() => '<th>HORA</th>').join('')}
+        <th>OBSERVACIONES<br/>¿Existe NE de la producción anterior? ${h.ne === 'si' ? '☑ Sí' : '☐ Sí'} ${h.ne === 'no' ? '☑ No' : '☐ No'}</th>
+      </tr>
+      ${rows}
+      <tr><td></td><td style="text-align:left"><b>ANALISTA/INSPECTOR</b></td>${pv('an')}<td></td></tr>
+      <tr><td></td><td style="text-align:right">HORA FINAL</td>${pv('hf')}<td>Revisado por: ${v('revisado')}</td></tr>
+    </table>
+    </body></html>`)
+  w.document.close()
+  w.focus()
+  setTimeout(() => w.print(), 400)
+}
+
+export default function ControlEnvasadoForm({ initialData, onCancel, onSave }: any) {
+  const [h, setH] = useState<any>(() => ({ ...(initialData || {}) }))
+  useEffect(() => {
+    setH((p: any) => ({
+      ...p,
+      lote: initialData?.lote || initialData?.lot_number || p.lote || '',
+      lot_number: initialData?.lot_number || initialData?.lote || p.lot_number || '',
+      producto: initialData?.producto || p.producto || '',
+    }))
+  }, [initialData?.lote, initialData?.lot_number, initialData?.producto])
   const set = (k: string, v: string) => setH((p: any) => ({ ...p, [k]: v }))
   const v = (k: string) => h[k] || ''
   const save = () => {
-    localStorage.setItem(KEY, JSON.stringify(h))
     onSave?.(h)
   }
   const cell = (k: string) =>
@@ -76,57 +136,7 @@ export default function ControlEnvasadoForm({ onCancel, onSave }: any) {
       </td>
     ))
 
-    const print = () => {
-    const logo = `${window.location.origin}/yazoo.png`
-    const pv = (k: string) => H.map((n) => `<td>${v(k + '_' + n) || '&nbsp;'}</td>`).join('')
-    const rows = BLOCKS.map((b) =>
-      b.rows
-        .map(
-          ([k, l], i) =>
-            `<tr>${
-              i === 0
-                ? `<td rowspan="${b.rows.length}" style="writing-mode:vertical-rl;transform:rotate(180deg);font-weight:700">${b.g}</td>`
-                : ''
-            }<td style="text-align:left">${l}</td>${pv(k)}<td>${v(k + '_obs') || ''}</td></tr>`
-        )
-        .join('')
-    ).join('')
-
-    const w = window.open('', '_blank', 'width=1200,height=800')
-    if (!w) return
-    w.document.write(`<!DOCTYPE html><html><head><meta charset="utf-8"/><title>Y-FO-CC-004</title>
-      <style>
-        body{font-family:Arial;font-size:10px;color:#000;padding:12px}
-        table{border-collapse:collapse;width:100%;table-layout:fixed}
-        td,th{border:1px solid #000;padding:3px;vertical-align:middle}
-        .hdr{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px}
-        @media print{body{padding:0} img{print-color-adjust:exact;-webkit-print-color-adjust:exact}}
-      </style></head><body>
-      <div class="hdr">
-        <img src="${logo}" height="42" alt="Yazoo"/>
-        <div style="text-align:center;font-weight:700;font-size:16px">CONTROL DE ENVASADO</div>
-        <div style="text-align:right;font-size:10px">CODIGO: Y-FO-CC-004<br/>REV.: 06<br/>PAG.: 1 de 1</div>
-      </div>
-      <table>
-        <tr><td>GRADO ALC. (°GL): ${v('esp_grado')}</td><td colspan="2">PRODUCTO: ${v('producto')}</td></tr>
-        <tr><td>CAPACIDAD (ml): ${v('cap')}</td><td>LOTE DE ELABORACION: ${v('lote_elab')}</td><td>LINEA: ${v('linea')}</td></tr>
-        <tr><td>COLOR: ${v('esp_color')} Abs / %T</td><td>LOTE: ${v('lote')}</td><td>FECHA: ${v('fecha')}</td></tr>
-      </table>
-      <table>
-        <tr>
-          <th></th><th>ARRANQUE DE LINEA / HORA DE INSPECCIÓN</th>
-          ${H.map(() => '<th>HORA</th>').join('')}
-          <th>OBSERVACIONES<br/>¿Existe NE de la producción anterior? ${h.ne === 'si' ? '☑ Sí' : '☐ Sí'} ${h.ne === 'no' ? '☑ No' : '☐ No'}</th>
-        </tr>
-        ${rows}
-        <tr><td></td><td style="text-align:left"><b>ANALISTA/INSPECTOR</b></td>${pv('an')}<td></td></tr>
-        <tr><td></td><td style="text-align:right">HORA FINAL</td>${pv('hf')}<td>Revisado por: ${v('revisado')}</td></tr>
-      </table>
-      </body></html>`)
-    w.document.close()
-    w.focus()
-    setTimeout(() => w.print(), 400)
-  }
+  const print = () => printControlEnvasado(h)
 
   return (
     <div className="bg-[#EDE8E0] p-3 max-h-[80vh] overflow-auto text-black">
@@ -210,7 +220,7 @@ export default function ControlEnvasadoForm({ onCancel, onSave }: any) {
       </div>
       <div className="flex justify-end gap-2 mt-3 max-w-[1180px] mx-auto">
         <button type="button" onClick={onCancel}>Cancelar</button>
-        <button type="button" className="border px-3 py-1" onClick={print}>Imprimir</button>
+        <button type="button" className="border px-3 py-1" data-yazoo-print="1" onClick={print}>Imprimir</button>
         <button type="button" className="bg-[#DCA54C] px-4 py-1 rounded-full font-semibold" onClick={save}>Guardar</button>
       </div>
     </div>

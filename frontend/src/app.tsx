@@ -16,7 +16,7 @@ import WarehousePage from './pages/WarehousePage'
 import WmsPage from './pages/WmsPage'
 import PurchasesPage from './pages/PurchasesPage'
 import WorkspacePage from './pages/WorkspacePage'
-
+import SafetyPage from './pages/SafetyPage'
 
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
@@ -66,6 +66,7 @@ function AppRoutes() {
         <Route path="/wms" element={<WmsPage />} />
         <Route path="/workspace" element={<WorkspacePage />} />
         <Route path="/purchases" element={<PurchasesPage />} />
+        <Route path="safety" element={<SafetyPage />} />
       </Route>
 
       <Route path="*" element={<Navigate to="/" replace />} />

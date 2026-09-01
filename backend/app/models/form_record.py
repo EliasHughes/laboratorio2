@@ -10,6 +10,8 @@ class FormRecord(Base):
     form_type = Column(String(80), nullable=False, index=True)
     form_code = Column(String(50), nullable=True)
     title = Column(String(200), nullable=False)
+    lot_id = Column(Integer, ForeignKey("lots.id"), nullable=True, index=True)
+    lot_number = Column(String(80), nullable=True)
     data_json = Column(Text, nullable=False, default="{}")
     status = Column(String(30), default="borrador")
     created_by_id = Column(Integer, ForeignKey("users.id"), nullable=True)

@@ -25,6 +25,7 @@ import {
   ArrowDownToLine,
   FileText,
   Activity,
+  Shield,
 } from 'lucide-react'
 import api from '../services/api'
 
@@ -49,36 +50,59 @@ export default function DashboardPage() {
   const [moves, setMoves] = useState<any[]>([])
   const [audit, setAudit] = useState<any[]>([])
   const [forms, setForms] = useState<any[]>([])
+  const [ehsOpen, setEhsOpen] = useState(0)
 
-  useEffect(() => {
-    const pull = async () => {
-      const safe = async (path: string) => {
-        try {
-          const { data } = await api.get(path)
-          return Array.isArray(data) ? data : data?.items || data?.records || data?.alerts || []
-        } catch {
-          return []
-        }
+ useEffect(() => {
+  const pull = async () => {
+    const safe = async (path: string) => {
+      try {
+        const { data } = await api.get(path)
+        return Array.isArray(data) ? data : data?.items || data?.records || data?.alerts || []
+      } catch {
+        return []
       }
-      const [p, l, m, a, f] = await Promise.all([
-        safe('/products'),
-        safe('/lots'),
-        safe('/movements'),
-        safe('/audit'),
-        safe('/forms'),
-      ])
-      setProducts(p)
-      setLots(l)
-      setMoves(m)
-      setAudit(a)
-      setForms(f)
     }
-    pull()
-  }, [])
+
+    const [p, l, m, a, f] = await Promise.all([
+      safe('/products'),
+      safe('/lots'),
+      safe('/movements'),
+      safe('/audit'),
+      safe('/forms'),
+    ])
+
+    setProducts(p)
+    setLots(l)
+    setMoves(m)
+    setAudit(a)
+    setForms(f)
+
+    // Mueve la llamada aquí adentro:
+    try {
+      const { data } = await api.get('/ehs/summary')
+      setEhsOpen(Number(data?.open || 0))
+    } catch {
+      setEhsOpen(0)
+    }
+  }
+
+  pull()
+}, [])
 
   const k = useMemo(() => {
-    const lab = lots.filter((x) => String(x.location || '').toLowerCase().includes('labor'))
-    const alm = lots.filter((x) => String(x.location || '').toLowerCase().includes('almac'))
+   const qtyIn = (lot: any, prefix: string) => {
+    const p = prefix.toLowerCase()
+      if (Array.isArray(lot.stocks) && lot.stocks.length) {
+        return lot.stocks
+          .filter((s: any) => String(s.location || '').toLowerCase().includes(p))
+          .reduce((n: number, s: any) => n + Number(s.qty || 0), 0)
+      }
+      return String(lot.location || '').toLowerCase().includes(p) ? Number(lot.current_qty || 0) : 0
+    }
+        const labQty = lots.reduce((n, x) => n + qtyIn(x, 'labor'), 0)
+    const almQty = lots.reduce((n, x) => n + qtyIn(x, 'almac'), 0)
+    const lab = lots.filter((x) => qtyIn(x, 'labor') > 0)
+    const alm = lots.filter((x) => qtyIn(x, 'almac') > 0)
     const por = lots.filter((x) => {
       const d = daysTo(x.expiry_date || x.expiration_date)
       return String(x.status) === 'por_vencer' || (d >= 0 && d <= 30)
@@ -99,11 +123,20 @@ export default function DashboardPage() {
     }
   }, [products, lots, moves, forms])
 
-  const byLoc = useMemo(() => {
+    const byLoc = useMemo(() => {
     const m: Record<string, number> = {}
     lots.forEach((l) => {
-      const loc = l.location || 'Sin ubicación'
-      m[loc] = (m[loc] || 0) + Number(l.current_qty || l.qty || 0)
+      if (Array.isArray(l.stocks) && l.stocks.length) {
+        l.stocks.forEach((s: any) => {
+          const loc = s.location || 'Sin ubicación'
+          if (String(loc).toLowerCase() === 'varias') return
+          m[loc] = (m[loc] || 0) + Number(s.qty || 0)
+        })
+      } else {
+        const loc = l.location || 'Sin ubicación'
+        if (String(loc).toLowerCase() === 'varias') return
+        m[loc] = (m[loc] || 0) + Number(l.current_qty || l.qty || 0)
+      }
     })
     return Object.entries(m).map(([name, qty]) => ({ name, qty }))
   }, [lots])
@@ -148,6 +181,7 @@ export default function DashboardPage() {
     { label: 'Movimientos', value: k.moves, hint: 'Kardex', icon: ArrowDownToLine, to: '/kardex' },
     { label: 'Formularios', value: k.forms, hint: 'Calidad', icon: FileText, to: '/forms' },
     { label: 'Alertas activas', value: k.alerts, hint: 'Campana', icon: Activity, to: '/inventory' },
+    { label: 'EHS abiertos', value: ehsOpen, hint: 'Seguridad industrial', icon: ShieldAlert, to: '/safety' },
   ]
 
   return (

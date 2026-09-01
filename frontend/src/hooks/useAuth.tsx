@@ -22,9 +22,11 @@ type AuthContextType = {
   user: AuthUser | null
   token: string | null
   loading: boolean
+  isLoading: boolean
   isAuthenticated: boolean
   login: (token: string, user?: AuthUser) => void
   logout: () => void
+  can: (code: string) => boolean
 }
 
 const AuthContext = createContext<AuthContextType | null>(null)
@@ -101,16 +103,24 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }, [])
 
+    const can = (code: string) => {
+    const role = String(user?.role || '').toLowerCase()
+    if (role === 'admin' || role === 'administrador') return true
+    return (user?.permissions || []).includes(code)
+  }
+
   return (
     <AuthContext.Provider
       value={{
-        user,
-        token,
-        loading,
-        isAuthenticated: Boolean(token),
-        login,
-        logout,
-      }}
+          user,
+          token,
+          loading,
+          isLoading: loading,
+          isAuthenticated: Boolean(token),
+          login,
+          logout,
+          can,
+        }}
     >
       {children}
     </AuthContext.Provider>

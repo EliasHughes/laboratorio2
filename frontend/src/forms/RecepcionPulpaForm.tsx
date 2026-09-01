@@ -27,7 +27,7 @@ const FISICO = [
 ]
 
 export default function RecepcionPulpaForm({ onCancel, onSave, initialData }: any) {
-  const saved = { ...load(), ...(initialData || {}) }
+  const saved = { ...(initialData || {}) }
   const [h, setH] = useState<any>(saved)
   const role = (localStorage.getItem('role') || '').toLowerCase()
   const locked = !!saved._saved && role !== 'admin'
@@ -38,7 +38,6 @@ export default function RecepcionPulpaForm({ onCancel, onSave, initialData }: an
   const v = (k: string) => h[k] || ''
   const save = () => {
     const d = { ...h, _saved: true }
-    localStorage.setItem(KEY, JSON.stringify(d))
     onSave?.(d)
   }
 
@@ -223,7 +222,7 @@ export default function RecepcionPulpaForm({ onCancel, onSave, initialData }: an
       </div>
       <div className="flex justify-end gap-2 mt-3 max-w-[980px] mx-auto">
         <button type="button" onClick={onCancel}>Cancelar</button>
-        <button type="button" className="border px-3 py-1" onClick={print}>Imprimir</button>
+        <button type="button" className="border px-3 py-1" data-yazoo-print="1" onClick={print}>Imprimir</button>
         <button type="button" className="bg-[#DCA54C] px-4 py-1 rounded-full font-semibold" onClick={save}>Guardar</button>
       </div>
     </div>

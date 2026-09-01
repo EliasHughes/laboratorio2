@@ -25,35 +25,31 @@ import {
 } from 'lucide-react'
 
 const navItems = [
-  { to: '/workspace', icon: Grid3x3, label: 'Área de trabajo' },
-  { to: '/', icon: LayoutDashboard, label: 'Panel de Control', end: true },
-  { to: '/inventory', icon: Package, label: 'Inventario y Lotes' },
-  { to: '/withdrawals', icon: ArrowDownToLine, label: 'Retiros y Despachos' },
-  { to: '/receiving', icon: Truck, label: 'Recepción / Ingresos' },
-  { to: '/solutions', icon: Beaker, label: 'Soluciones Internas' },
-  { to: '/reports', icon: FileBarChart, label: 'Reportes' },
-  { to: '/forms', icon: FileText, label: 'Formularios / Registros' },
-  { to: '/kardex', icon: ClipboardList, label: 'Kardex y Auditoría' },
-  { to: '/roles', icon: Shield, label: 'Roles y Permisos' },
-  { to: '/users', icon: Users, label: 'Usuarios y Roles' },
-  { to: '/warehouse', icon: Warehouse, label: 'Almacén' },
-  { to: '/wms', icon: ScanLine, label: 'WMS Piso' },
-  { to: '/purchases', icon: ShoppingCart, label: 'Compras', hint: 'OC y proveedores', staff: true },
+  { to: '/workspace', icon: Grid3x3, label: 'Área de trabajo', perm: 'dashboard:view' },
+  { to: '/', icon: LayoutDashboard, label: 'Panel de Control', end: true, perm: 'dashboard:view' },
+  { to: '/inventory', icon: Package, label: 'Inventario y Lotes', perm: 'inventory:view' },
+  { to: '/withdrawals', icon: ArrowDownToLine, label: 'Retiros y Despachos', perm: 'withdrawals:view' },
+  { to: '/receiving', icon: Truck, label: 'Recepción / Ingresos', perm: 'receiving:view' },
+  { to: '/solutions', icon: Beaker, label: 'Soluciones Internas', perm: 'solutions:view' },
+  { to: '/reports', icon: FileBarChart, label: 'Reportes', perm: 'reports:view' },
+  { to: '/forms', icon: FileText, label: 'Formularios / Registros', perm: 'forms:view' },
+  { to: '/kardex', icon: ClipboardList, label: 'Kardex y Auditoría', perm: 'kardex:view' },
+  { to: '/roles', icon: Shield, label: 'Roles y Permisos', perm: 'roles:view' },
+  { to: '/users', icon: Users, label: 'Usuarios y Roles', perm: 'users:view' },
+  { to: '/warehouse', icon: Warehouse, label: 'Almacén', perm: 'warehouse:view' },
+  { to: '/wms', icon: ScanLine, label: 'WMS Piso', perm: 'wms:view' },
+  { to: '/purchases', icon: ShoppingCart, label: 'Compras', perm: 'purchases:view' },
+  { to: '/safety', icon: Shield, label: 'Seguridad industrial', perm: 'ehs:view' },
 ]
 
 export default function Layout() {
-  const { user, logout } = useAuth()
+  const { user, logout, can } = useAuth()
+  const isAdmin = String(user?.role || '').toLowerCase().includes('admin')
   const navigate = useNavigate()
   const location = useLocation()
   const [collapsed, setCollapsed] = useState(false)
   const [mobileOpen, setMobileOpen] = useState(false)
-
-  const role = String((user as any)?.role?.name || (user as any)?.role || '').toLowerCase()
-  const isAdmin = role.includes('admin') || role === 'administrador'
-  const visibleNav = navItems.filter((item) => {
-    if (isAdmin) return true
-    return !['/users', '/roles'].includes(item.to)
-  })
+  const visibleNav = navItems.filter((item) => can(item.perm))
 
   const currentPage =
     visibleNav.find((item) =>

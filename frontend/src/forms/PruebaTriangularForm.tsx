@@ -12,8 +12,8 @@ const load = () => {
 
 const mark = (on: boolean) => (on ? '☑' : '☐')
 
-export default function PruebaTriangularForm({ onCancel, onSave }: any) {
-  const [h, setH] = useState<any>(() => ({ fecha: load().fecha || today(), ...load() }))
+export default function PruebaTriangularForm({ onCancel, onSave, initialData }: any) {
+  const [h, setH] = useState<any>(() => ({ fecha: today(), ...(initialData || {}) }))
   const set = (k: string, v: any) => {
     if (k === 'fecha') return
     setH((p: any) => ({ ...p, [k]: v }))
@@ -25,7 +25,6 @@ export default function PruebaTriangularForm({ onCancel, onSave }: any) {
   const has = (k: string, v: string) => (h[k] || []).includes(v)
   const save = () => {
     const d = { ...h, fecha: h.fecha || today() }
-    localStorage.setItem(KEY, JSON.stringify(d))
     onSave?.(d)
   }
 
@@ -241,7 +240,7 @@ export default function PruebaTriangularForm({ onCancel, onSave }: any) {
         <button type="button" onClick={onCancel}>
           Cancelar
         </button>
-        <button type="button" className="border border-black px-3 py-1" onClick={print}>
+        <button type="button" className="border border-black px-3 py-1" data-yazoo-print="1" onClick={print}>
           Imprimir
         </button>
         <button type="button" className="bg-[#DCA54C] px-4 py-1 rounded-full font-semibold" onClick={save}>

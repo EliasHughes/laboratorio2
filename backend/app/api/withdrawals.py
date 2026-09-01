@@ -29,7 +29,6 @@ def fefo_lots(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    """Lotes disponibles del producto, FEFO (vence antes primero)."""
     lots = (
         db.query(Lot)
         .filter(Lot.product_id == product_id)
@@ -37,18 +36,20 @@ def fefo_lots(
         .all()
     )
     out = []
+    from app.services.stock import qty_in_sites
+
     for lot in lots:
-        qty = float(getattr(lot, "current_qty", 0) or 0)
-        st = (getattr(lot, "status", "") or "").lower()
-        if qty <= 0 or st in ("vencido", "agotado", "cuarentena"):
+        st = str(getattr(getattr(lot, "status", None), "value", getattr(lot, "status", "")) or "").lower()
+        lab_qty = qty_in_sites(db, lot, ("laboratorio", "refrigerado"))
+        if lab_qty <= 0 or st in ("vencido", "agotado", "cuarentena", "retenido"):
             continue
         out.append(
             {
                 "id": lot.id,
                 "lot_number": lot.lot_number,
-                "current_qty": qty,
+                "current_qty": lab_qty,
                 "expiry_date": lot.expiry_date,
-                "location": getattr(lot, "location", None),
+                "location": "Laboratorio",
                 "status": getattr(lot, "status", None),
                 "suggested": len(out) == 0,
             }
@@ -72,26 +73,33 @@ def create_withdrawal(
     if lot.product_id != body.product_id:
         raise HTTPException(status_code=400, detail="El lote no pertenece a ese producto")
 
-    available = float(getattr(lot, "current_qty", 0) or 0)
-    st = (getattr(lot, "status", "") or "").lower()
-    if st in ("vencido", "cuarentena"):
+    st = str(getattr(getattr(lot, "status", None), "value", getattr(lot, "status", "")) or "").lower()
+    if st in ("vencido", "cuarentena", "retenido", "agotado"):
+        raise HTTPException(status_code=400, detail=f"No se puede retirar un lote en estado '{lot.status}'")
+
+    from app.services.stock import qty_in_sites, qty_at, consume_stock
+
+    lab_qty = qty_in_sites(db, lot, ("laboratorio", "refrigerado"))
+    if lab_qty <= 0:
         raise HTTPException(
             status_code=400,
-            detail=f"No se puede retirar un lote en estado '{lot.status}'",
+            detail="No hay cantidad de este lote en Laboratorio. Transfiérelo desde WMS.",
         )
-    if body.quantity > available:
-        raise HTTPException(
-            status_code=400,
-            detail=f"Cantidad mayor al disponible ({available})",
-        )
+    if body.quantity > lab_qty:
+        raise HTTPException(status_code=400, detail=f"En Laboratorio solo hay {lab_qty}")
+
+    site = "Laboratorio"
+    if qty_at(db, lot, "Laboratorio") < float(body.quantity) and qty_at(db, lot, "Refrigerado") >= float(body.quantity):
+        site = "Refrigerado"
 
     now = datetime.utcnow()
-    new_qty = available - float(body.quantity)
-    lot.current_qty = new_qty
-    if new_qty <= 0:
+    try:
+        consume_stock(db, lot, site, float(body.quantity))
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    if float(lot.current_qty or 0) <= 0:
         lot.status = "agotado"
-    if hasattr(lot, "updated_at"):
-        lot.updated_at = now
+    lot.updated_at = now
 
     try:
         db.commit()
@@ -100,39 +108,17 @@ def create_withdrawal(
         db.rollback()
         raise HTTPException(status_code=500, detail=f"No se pudo actualizar el lote: {e}")
 
-    # Kardex opcional: no revierte el retiro si falla
-    try:
-        from app.models.movement import Movement
+    from app.services.kardex import write_movement
 
-        mov = Movement()
-        if hasattr(mov, "lot_id"):
-            mov.lot_id = lot.id
-        if hasattr(mov, "product_id"):
-            mov.product_id = body.product_id
-        if hasattr(mov, "movement_type"):
-            mov.movement_type = "salida"
-        if hasattr(mov, "type"):
-            mov.type = "salida"
-        if hasattr(mov, "qty"):
-            mov.qty = body.quantity
-        if hasattr(mov, "quantity"):
-            mov.quantity = body.quantity
-        if hasattr(mov, "reason"):
-            mov.reason = body.reason
-        if hasattr(mov, "destination"):
-            mov.destination = body.destination
-        if hasattr(mov, "notes"):
-            mov.notes = body.notes
-        if hasattr(mov, "user_id"):
-            mov.user_id = current_user.id
-        if hasattr(mov, "created_by"):
-            mov.created_by = current_user.id
-        if hasattr(mov, "created_at"):
-            mov.created_at = now
-        db.add(mov)
-        db.commit()
-    except Exception:
-        db.rollback()
+    write_movement(
+        db,
+        lot_id=lot.id,
+        user_id=current_user.id,
+        qty=float(body.quantity),
+        destination=body.destination or "Laboratorio",
+        notes=body.reason or body.notes or "Retiro",
+        kinds=("retiro_analisis", "salida", "ajuste"),
+    )
 
     try:
         from app.api.deps import create_audit_log
@@ -143,10 +129,7 @@ def create_withdrawal(
             action="CREATE",
             entity="Withdrawal",
             entity_id=lot.id,
-            details=(
-                f"Retiro {body.quantity} de lote {lot.lot_number} "
-                f"({product.name}) → {body.destination}"
-            ),
+            details=f"Retiro {body.quantity} de lote {lot.lot_number} ({product.name})",
             ip_address=None,
         )
         db.commit()

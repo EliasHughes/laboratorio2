@@ -43,9 +43,11 @@ def fefo_lots(
     )
     out = []
     for lot in lots:
+        qty = float(getattr(lot, "current_qty", 0) or 0)
+        st = str(getattr(getattr(lot, "status", None), "value", getattr(lot, "status", "")) or "").lower()
         loc = (getattr(lot, "location", "") or "").strip().lower()
         usable = loc.startswith("laboratorio") or loc.startswith("refrigerado")
-        if qty <= 0 or st in ("vencido", "agotado", "cuarentena") or not usable:
+        if qty <= 0 or st in ("vencido", "agotado", "cuarentena", "retenido") or not usable:
             continue
         out.append(
             {
@@ -126,8 +128,9 @@ def create_withdrawal(
     movement = Movement()
     _set_if_has(movement, "lot_id", lot.id)
     _set_if_has(movement, "product_id", lot.product_id)
-    _set_if_has(movement, "movement_type", "salida")
-    _set_if_has(movement, "type", "salida")
+    from app.models.movement import MovementType, resolve_movement_type
+    _set_if_has(movement, "movement_type", resolve_movement_type("salida"))
+    _set_if_has(movement, "type", MovementType.retiro_analisis)
     _set_if_has(movement, "qty", quantity)
     _set_if_has(movement, "quantity", quantity)
     _set_if_has(movement, "destination", destination)
@@ -178,6 +181,13 @@ def list_movements(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
+    try:
+        from app.services.kardex import backfill_missing_ingresos
+
+        backfill_missing_ingresos(db, current_user.id)
+    except Exception:
+        db.rollback()
+
     rows = (
         db.query(Movement)
         .order_by(Movement.id.desc())
@@ -197,17 +207,26 @@ def list_movements(
         qty = getattr(m, "qty", None)
         if qty is None:
             qty = getattr(m, "quantity", None)
+        mtype = getattr(m, "movement_type", None) or getattr(m, "type", None) or "ingreso"
+        if hasattr(mtype, "value"):
+            mtype = mtype.value
+        uname = None
+        if user:
+            uname = getattr(user, "full_name", None) or getattr(user, "username", None)
         out.append(
             {
                 "id": m.id,
-                "type": getattr(m, "movement_type", None) or getattr(m, "type", None) or "salida",
+                "lot_id": getattr(m, "lot_id", None),
+                "type": str(mtype),
                 "qty": float(qty or 0),
                 "lot_number": getattr(lot, "lot_number", None) if lot else None,
                 "product_name": getattr(product, "name", None) if product else None,
                 "product_code": getattr(product, "code", None) if product else None,
                 "notes": getattr(m, "notes", None),
+                "reason": getattr(m, "notes", None),
                 "destination": getattr(m, "destination", None),
                 "username": getattr(user, "username", None) if user else None,
+                "user_name": uname,
                 "full_name": getattr(user, "full_name", None) if user else None,
                 "created_at": getattr(m, "created_at", None),
             }

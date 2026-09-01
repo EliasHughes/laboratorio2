@@ -31,8 +31,8 @@ const ROWS: [string, string, boolean][] = [
   ['obs', 'OBSERVACIÓN', false],
 ]
 
-export default function ControlEnvejecimientoForm({ onCancel, onSave }: any) {
-  const [h, setH] = useState<any>(() => ({ fecha_inicio: load().fecha_inicio || today(), ...load() }))
+export default function ControlEnvejecimientoForm({ onCancel, onSave, initialData }: any) {
+  const [h, setH] = useState<any>(() => ({ fecha_inicio: today(), ...(initialData || {}) }))
   const set = (k: string, v: string) => {
     if (k === 'fecha_inicio') return
     setH((p: any) => ({ ...p, [k]: v }))
@@ -40,7 +40,6 @@ export default function ControlEnvejecimientoForm({ onCancel, onSave }: any) {
   const v = (k: string) => h[k] || ''
   const save = () => {
     const d = { ...h, fecha_inicio: h.fecha_inicio || today() }
-    localStorage.setItem(KEY, JSON.stringify(d))
     onSave?.(d)
   }
   const cells = (k: string) =>
@@ -132,7 +131,7 @@ export default function ControlEnvejecimientoForm({ onCancel, onSave }: any) {
       </div>
       <div className="flex justify-end gap-2 mt-3 max-w-[1100px] mx-auto">
         <button type="button" onClick={onCancel}>Cancelar</button>
-        <button type="button" className="border px-3 py-1" onClick={print}>Imprimir</button>
+        <button type="button" className="border px-3 py-1" data-yazoo-print="1" onClick={print}>Imprimir</button>
         <button type="button" className="bg-[#DCA54C] px-4 py-1 rounded-full font-semibold" onClick={save}>Guardar</button>
       </div>
     </div>

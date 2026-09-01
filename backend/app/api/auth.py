@@ -40,7 +40,7 @@ def login(
     if getattr(user, "role_rel", None) is not None:
         role_name = user.role_rel.name
 
-    return {
+        return {
         "access_token": token,
         "token_type": "bearer",
         "user": {
@@ -51,9 +51,9 @@ def login(
             "role": role_name,
             "role_id": user.role_id,
             "is_active": user.is_active,
+            "permissions": get_user_permissions(user),
         },
     }
-
 
 @router.get("/me", response_model=UserWithPermissions)
 def me(current_user: User = Depends(get_current_user)):

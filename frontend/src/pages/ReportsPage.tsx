@@ -11,6 +11,14 @@ function venc(r: any) {
   return r.expiry_date || r.expiration_date || r.vence || '—'
 }
 
+function unwrap(payload: any): any[] {
+  if (Array.isArray(payload)) return payload
+  if (Array.isArray(payload?.data)) return payload.data
+  if (Array.isArray(payload?.items)) return payload.items
+  if (Array.isArray(payload?.records)) return payload.records
+  return []
+}
+
 function printHtml(title: string, body: string) {
   const w = window.open('', '_blank')
   if (!w) return
@@ -38,8 +46,9 @@ function printHtml(title: string, body: string) {
 const TABS = [
   { id: 'lotes', label: 'Inventario / lotes', hint: 'Stock, vencimiento, ubicación' },
   { id: 'recepciones', label: 'Recepciones', hint: 'Ingresos a almacén' },
-  { id: 'compras', label: 'Órdenes de compra', hint: 'OC y estado' },
+  { id: 'movimientos', label: 'Kardex', hint: 'Movimientos de stock' },
   { id: 'calidad', label: 'Calidad / formularios', hint: 'Registros de laboratorio' },
+  { id: 'compras', label: 'Órdenes de compra', hint: 'OC y estado' },
   { id: 'orden', label: 'Auditoría', hint: 'Quién / qué / cuándo' },
 ]
 
@@ -50,25 +59,32 @@ export default function ReportsPage() {
   const [from, setFrom] = useState('')
   const [to, setTo] = useState('')
   const [q, setQ] = useState('')
+  const [loading, setLoading] = useState(false)
 
   const load = async () => {
     setErr('')
-    try {
-      const path =
-        kind === 'lotes'
-          ? '/lots'
-          : kind === 'recepciones'
-            ? '/receiving/recent'
+    setLoading(true)
+    const path =
+      kind === 'lotes'
+        ? '/lots'
+        : kind === 'recepciones'
+          ? '/receiving/recent'
+          : kind === 'movimientos'
+            ? '/movements'
             : kind === 'compras'
               ? '/purchases/orders'
               : kind === 'calidad'
                 ? '/forms'
                 : '/audit'
-      const data = await api.get(path)
-      setRows(Array.isArray(data) ? data : data?.items || data?.records || [])
-    } catch {
-      setErr('No se pudo cargar este reporte.')
+    try {
+      const res = await api.get(path)
+      setRows(unwrap(res.data))
+    } catch (e: any) {
+      const detail = e?.response?.data?.detail
+      setErr(detail ? `No se pudo cargar: ${detail}` : 'No se pudo cargar este reporte.')
       setRows([])
+    } finally {
+      setLoading(false)
     }
   }
 
@@ -92,16 +108,23 @@ export default function ReportsPage() {
 
   const line = (r: any) => {
     if (kind === 'lotes') {
-      return `${cell(r.lot_number)} · ${cell(r.product_name)} · ${cell(r.current_qty || r.qty)} · vence ${venc(r)} · ${cell(r.location || r.warehouse)}`
+      const areas =
+        Array.isArray(r.stocks) && r.stocks.length
+          ? r.stocks.map((s: any) => `${s.location}:${s.qty}`).join(' · ')
+          : cell(r.location)
+      return `${cell(r.lot_number)} · ${cell(r.product_name)} · ${cell(r.current_qty ?? r.qty)} · vence ${venc(r)} · ${areas}`
     }
     if (kind === 'recepciones') {
-      return `${cell(r.lot_number || r.lot_code)} · ${cell(r.product_name)} · ${cell(r.quantity)} · ${cell(r.location)}`
+      return `${cell(r.lot_number || r.lot_code)} · ${cell(r.product_name)} · ${cell(r.quantity ?? r.qty)} · ${cell(r.location)}`
     }
-    if (kind === 'compras') return `${cell(r.number)} · ${cell(r.status)} · ${cell(r.currency)}`
+    if (kind === 'movimientos') {
+      return `${cell(r.created_at)} · ${cell(r.type)} · ${cell(r.lot_number)} · ${cell(r.product_name)} · ${cell(r.qty)} · ${cell(r.reason || r.destination)}`
+    }
+    if (kind === 'compras') return `${cell(r.number || r.code)} · ${cell(r.status)} · ${cell(r.supplier_name || r.supplier)}`
     if (kind === 'calidad') {
-      return `${cell(r.form_code)} · ${cell(r.title)} · ${cell(r.status)} · ${cell(r.created_by_name || r.user_name)}`
+      return `${cell(r.form_code)} · ${cell(r.title)} · lote ${cell(r.lot_number)} · ${cell(r.status)} · ${cell(r.created_by_name || r.user_name)}`
     }
-    return `${cell(r.action)} · ${cell(r.user_name || r.username)} · ${cell(r.module)} · ${cell(r.created_at || r.timestamp)}`
+    return `${cell(r.action)} · ${cell(r.user_name || r.username)} · ${cell(r.entity || r.module)} · ${cell(r.created_at || r.timestamp)}`
   }
 
   const printAll = () => {
@@ -116,10 +139,10 @@ export default function ReportsPage() {
     <div className="space-y-5 text-[#1A120E]">
       <div>
         <h2 className="text-xl font-semibold">Reportes</h2>
-        <p className="text-sm text-stone-500">Listado o ficha · español · membrete Yazoo</p>
+        <p className="text-sm text-stone-500">Listados del piloto · membrete Yazoo · mismos datos que Inventario / Kardex / Formularios</p>
       </div>
 
-      <div className="grid sm:grid-cols-5 gap-2">
+      <div className="grid sm:grid-cols-3 lg:grid-cols-6 gap-2">
         {TABS.map((t) => (
           <button
             key={t.id}
@@ -144,7 +167,7 @@ export default function ReportsPage() {
         </label>
         <input
           className="rounded-lg border border-[#E6E2DC] px-3 py-2 text-sm min-w-[260px]"
-          placeholder="Buscar código, título, estado, usuario..."
+          placeholder="Buscar código, lote, título..."
           value={q}
           onChange={(e) => setQ(e.target.value)}
         />
@@ -156,7 +179,9 @@ export default function ReportsPage() {
       {err ? <p className="text-red-700 text-sm">{err}</p> : null}
 
       <div className="rounded-xl border border-[#E6E2DC] bg-white divide-y">
-        {visible.length === 0 ? (
+        {loading ? (
+          <p className="p-4 text-sm text-stone-500">Cargando...</p>
+        ) : visible.length === 0 ? (
           <p className="p-4 text-sm text-stone-500">Sin registros para este filtro.</p>
         ) : (
           visible.map((r, i) => (

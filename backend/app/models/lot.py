@@ -9,6 +9,8 @@ class LotStatus(str, enum.Enum):
     por_vencer = "por_vencer"
     vencido = "vencido"
     cuarentena = "cuarentena"
+    agotado = "agotado"
+    retenido = "retenido"
 
 class Lot(Base):
     __tablename__ = "lots"

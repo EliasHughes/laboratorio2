@@ -11,11 +11,11 @@ const load = () => {
 }
 const COLS = [1, 2, 3, 4, 5, 6]
 
-export default function RecepcionGranelForm({ onCancel, onSave }: any) {
+export default function RecepcionGranelForm({ onCancel, onSave, initialData }: any) {
   const [h, setH] = useState<any>(() => ({
-    fecha_doc: load().fecha_doc || today(),
-    mes: load().mes || today().slice(0, 7),
-    ...load(),
+    fecha_doc: today(),
+    mes: today().slice(0, 7),
+    ...(initialData || {}),
   }))
   const set = (k: string, v: string) => {
     if (k === 'fecha_doc') return
@@ -24,7 +24,6 @@ export default function RecepcionGranelForm({ onCancel, onSave }: any) {
   const v = (k: string) => h[k] || ''
   const save = () => {
     const d = { ...h, fecha_doc: h.fecha_doc || today() }
-    localStorage.setItem(KEY, JSON.stringify(d))
     onSave?.(d)
   }
 
@@ -205,7 +204,7 @@ export default function RecepcionGranelForm({ onCancel, onSave }: any) {
 
       <div className="flex justify-end gap-2 mt-3 max-w-[1100px] mx-auto">
         <button type="button" onClick={onCancel}>Cancelar</button>
-        <button type="button" className="border border-black px-3 py-1" onClick={print}>Imprimir</button>
+        <button type="button" className="border border-black px-3 py-1" data-yazoo-print="1" onClick={print}>Imprimir</button>
         <button type="button" className="bg-[#DCA54C] px-4 py-1 rounded-full font-semibold" onClick={save}>Guardar</button>
       </div>
     </div>

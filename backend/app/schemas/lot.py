@@ -48,3 +48,12 @@ class LotOut(BaseModel):
     created_at: Optional[datetime] = None
 
     model_config = ConfigDict(from_attributes=True)
+
+from typing import List, Optional
+
+class LotStockOut(BaseModel):
+    location: str
+    qty: float
+
+# dentro de LotOut:
+    stocks: List[LotStockOut] = []

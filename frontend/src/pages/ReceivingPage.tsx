@@ -98,7 +98,7 @@ export default function ReceivingPage() {
 
     setSaving(true)
     try {
-      await api.post('/receiving', {
+      const { data } = await api.post('/receiving', {
         product_id: Number(productId),
         lot_code: lotCode.trim(),
         quantity: qty,
@@ -110,7 +110,11 @@ export default function ReceivingPage() {
         location: location || 'Almacén central',
         notes: notes || null,
       })
-      setOk('Recepción registrada correctamente')
+      setOk(
+        data?.kardex && data.kardex !== 'ok'
+          ? `Lote creado. Kardex: ${data.kardex}`
+          : 'Recepción registrada. Revisa Kardex (ingreso).',
+      )
       setLotCode('')
       setQuantity('')
       setExpiry('')

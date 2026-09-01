@@ -12,7 +12,6 @@ import {
   Layers,
 } from 'lucide-react'
 
-
 const CATEGORIES = [
   'reactivo',
   'insumo',
@@ -47,6 +46,7 @@ type Lot = {
   expiry_date?: string
   arrival_date?: string
   location?: string
+  stocks?: { location: string; qty: number }[]
   status?: string
   supplier?: string
   coa_number?: string
@@ -72,8 +72,8 @@ export default function InventoryPage() {
   const [unit, setUnit] = useState('ml')
   const [minStock, setMinStock] = useState('0')
   const [description, setDescription] = useState('')
-
-  
+  const [ficha, setFicha] = useState<any | null>(null)
+  const [fichaErr, setFichaErr] = useState('')
 
   const load = async () => {
     setLoading(true)
@@ -170,6 +170,17 @@ export default function InventoryPage() {
     }
   }
 
+    const openFicha = async (id: number) => {
+    setFichaErr('')
+    try {
+      const res = await api.get(`/lots/${id}/ficha`)
+      setFicha(res.data)
+    } catch (err: any) {
+      setFichaErr(err?.response?.data?.detail || 'No se pudo cargar la ficha. ¿Pegaste GET /lots/{id}/ficha en lots.py?')
+      setFicha({ lot: { id }, stocks: [], forms: [], movements: [] })
+    }
+  }
+
   const statusClass = (s?: string) => {
     const v = (s || '').toLowerCase()
     if (v === 'vencido') return 'text-rose-400'
@@ -213,7 +224,6 @@ export default function InventoryPage() {
         </div>
       )}
 
-      {/* Tabs */}
       <div className="flex gap-2 border-b border-caribe-border pb-2">
         <button
           type="button"
@@ -235,7 +245,6 @@ export default function InventoryPage() {
         </button>
       </div>
 
-      {/* Filtros */}
       <div className="flex flex-col sm:flex-row gap-3">
         <div className="relative flex-1 max-w-md">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-stone-500" />
@@ -335,6 +344,8 @@ export default function InventoryPage() {
                   <th className="px-4 py-3">Vence</th>
                   <th className="px-4 py-3">Estado</th>
                   <th className="px-4 py-3">Ubicación</th>
+                  <th className="px-4 py-3"></th>
+                  
                 </tr>
               </thead>
               <tbody>
@@ -356,7 +367,20 @@ export default function InventoryPage() {
                       <td className={`px-4 py-2.5 text-xs font-medium ${statusClass(l.status)}`}>
                         {l.status || '—'}
                       </td>
-                      <td className="px-4 py-2.5 text-xs text-stone-400">{l.location || '—'}</td>
+                      <td className="px-4 py-2.5 text-xs text-stone-400">
+                        {l.stocks && l.stocks.length
+                          ? l.stocks.map((s) => `${s.location} ${s.qty}`).join(' · ')
+                          : l.location || '—'}
+                      </td>
+                     <td className="px-4 py-2.5">
+                        <button
+                          type="button"
+                          onClick={() => openFicha(l.id)}
+                          className="text-amber-400 text-xs font-medium hover:underline"
+                        >
+                          Ficha
+                        </button>
+                      </td>
                     </tr>
                   )
                 })}
@@ -364,9 +388,69 @@ export default function InventoryPage() {
             </table>
           </div>
         )}
+
+             {ficha && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60" onClick={() => setFicha(null)}>
+          <div
+            className="w-full max-w-2xl max-h-[85vh] overflow-auto bg-caribe-card border border-caribe-border rounded-2xl p-6 space-y-4"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex justify-between items-start">
+              <div>
+                <p className="text-xs text-stone-500 uppercase">Ficha de lote</p>
+                <h3 className="text-lg font-semibold text-stone-100">
+                  {ficha.lot?.lot_number || '—'} · {ficha.lot?.product_name || ''}
+                </h3>
+              </div>
+              <button type="button" onClick={() => setFicha(null)} className="text-stone-400">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            {fichaErr ? <p className="text-rose-400 text-sm">{fichaErr}</p> : null}
+
+            <div>
+              <p className="text-xs text-stone-500 uppercase mb-1">Stock por área</p>
+              {(ficha.stocks || []).length === 0 ? (
+                <p className="text-sm text-stone-400">Sin desglose</p>
+              ) : (
+                (ficha.stocks || []).map((s: any) => (
+                  <p key={s.location} className="text-sm text-stone-200">
+                    {s.location}: {s.qty}
+                  </p>
+                ))
+              )}
+            </div>
+
+            <div>
+              <p className="text-xs text-stone-500 uppercase mb-1">Formularios</p>
+              {(ficha.forms || []).length === 0 ? (
+                <p className="text-sm text-stone-400">Sin Y-FO</p>
+              ) : (
+                (ficha.forms || []).map((f: any) => (
+                  <p key={f.id} className="text-sm text-stone-200">
+                    {f.form_code} · {f.title} · {f.status}
+                  </p>
+                ))
+              )}
+            </div>
+
+            <div>
+              <p className="text-xs text-stone-500 uppercase mb-1">Kardex</p>
+              {(ficha.movements || []).length === 0 ? (
+                <p className="text-sm text-stone-400">Sin movimientos</p>
+              ) : (
+                (ficha.movements || []).slice(0, 15).map((m: any) => (
+                  <p key={m.id} className="text-sm text-stone-300">
+                    {m.type} · {m.qty} · {m.reason || '—'}
+                  </p>
+                ))
+              )}
+            </div>
+          </div>
+        </div>
+      )}
       </div>
 
-      {/* Modal nuevo producto */}
       {modal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
           <form
@@ -464,4 +548,3 @@ export default function InventoryPage() {
     </div>
   )
 }
-

@@ -40,8 +40,32 @@ const PARAMS = [
   ['hora_res', 'HORA DE ENTREGA DE RESULTADOS', true],
 ] as const
 
+export function printControlElaboracion(h: Record<string, any> = {}) {
+  const v = (k: string) => h[k] || ''
+  const pv = (k: string) => COLS.map((n) => `<td>${v(`${k}_${n}`) || '&nbsp;'}</td>`).join('')
+  const w = window.open('', '_blank', 'width=1100,height=900')
+  if (!w) return
+  w.document.write(`<!DOCTYPE html><html><head><meta charset="utf-8"/><title>Y-FO-CC-009</title>
+    <style>body{font-family:Arial;font-size:11px;padding:12px}table{border-collapse:collapse;width:100%}
+    td,th{border:1px solid #000;padding:3px;text-align:center}</style></head><body>
+    <h3 style="text-align:center">CONTROL DE ELABORACION DE PRODUCTOS ENVEJECIDOS Y DESTILADOS</h3>
+    <p>PRODUCTO: ${v('producto')} &nbsp; ${h.tipo === 'ENVASADO' ? '☑' : '☐'} ENVASADO &nbsp; ${h.tipo === 'GRANEL' ? '☑' : '☐'} GRANEL</p>
+    <p>NOMBRE DEL CLIENTE: ${v('cliente')} &nbsp; LOTE: ${v('lote')} &nbsp; LOTE DE ENVASADO: ${v('lote_env')}</p>
+    <table><tr><th>PARAMETROS</th><th>ESPECIFICACION</th><th>INCERTIDUMBRE</th>
+      <th>MEZCLADO</th><th>MEZCLADO</th><th>MEZCLADO</th><th>MEZCLADO</th></tr>
+    ${PARAMS.map(([k, l]) => `<tr><td style="text-align:left">${l}</td><td>${v(k + '_esp') || ''}</td><td>${v(k + '_inc') || ''}</td>${pv(k)}</tr>`).join('')}
+    <tr><td>OBSERVACIONES</td><td colspan="6">${v('obs')}</td></tr></table>
+    <p>APROBADO POR: ${v('aprobado')}</p>
+    <p>VERIFICACION PREVIO AL DESPACHO — FECHA: ${v('ver_fecha')} GRADO: ${v('ver_grado')} COLOR: ${v('ver_color')} VERIFICADO POR: ${v('ver_por')}</p>
+    <p style="font-size:10px">FO-CS-001 REV.:01 &nbsp; NOTA: la verificacion solo a ser realizada en graneles &nbsp; Aprobado: 15/07/2026</p>
+    </body></html>`)
+  w.document.close()
+  w.focus()
+  setTimeout(() => w.print(), 300)
+}
+
 export default function ControlElaboracionForm({ onCancel, onSave, initialData }: any) {
-  const saved = { ...load(), ...(initialData || {}) }
+  const saved = { ...(initialData || {}) }
   const [h, setH] = useState<any>(saved)
   const role = (localStorage.getItem('role') || localStorage.getItem('yazoo_role') || '').toLowerCase()
   const isAdmin = role === 'admin' || role === 'administrador'
@@ -54,7 +78,6 @@ export default function ControlElaboracionForm({ onCancel, onSave, initialData }
   const v = (k: string) => h[k] || ''
   const save = () => {
     const d = { ...h, _saved: true }
-    localStorage.setItem(KEY, JSON.stringify(d))
     onSave?.(d)
   }
 
@@ -70,28 +93,7 @@ export default function ControlElaboracionForm({ onCancel, onSave, initialData }
       </td>
     ))
 
-  const print = () => {
-    const w = window.open('', '_blank', 'width=1100,height=900')
-    if (!w) return
-    const pv = (k: string) => COLS.map((n) => `<td>${v(`${k}_${n}`) || '&nbsp;'}</td>`).join('')
-    w.document.write(`<!DOCTYPE html><html><head><meta charset="utf-8"/><title>Y-FO-CC-009</title>
-      <style>body{font-family:Arial;font-size:11px;padding:12px}table{border-collapse:collapse;width:100%}
-      td,th{border:1px solid #000;padding:3px;text-align:center}</style></head><body>
-      <h3 style="text-align:center">CONTROL DE ELABORACION DE PRODUCTOS ENVEJECIDOS Y DESTILADOS</h3>
-      <p>PRODUCTO: ${v('producto')} &nbsp; ${h.tipo === 'ENVASADO' ? '☑' : '☐'} ENVASADO &nbsp; ${h.tipo === 'GRANEL' ? '☑' : '☐'} GRANEL</p>
-      <p>NOMBRE DEL CLIENTE: ${v('cliente')} &nbsp; LOTE: ${v('lote')} &nbsp; LOTE DE ENVASADO: ${v('lote_env')}</p>
-      <table><tr><th>PARAMETROS</th><th>ESPECIFICACION</th><th>INCERTIDUMBRE</th>
-        <th>MEZCLADO</th><th>MEZCLADO</th><th>MEZCLADO</th><th>MEZCLADO</th></tr>
-      ${PARAMS.map(([k, l]) => `<tr><td style="text-align:left">${l}</td><td>${v(k + '_esp') || ''}</td><td>${v(k + '_inc') || ''}</td>${pv(k)}</tr>`).join('')}
-      <tr><td>OBSERVACIONES</td><td colspan="6">${v('obs')}</td></tr></table>
-      <p>APROBADO POR: ${v('aprobado')}</p>
-      <p>VERIFICACION PREVIO AL DESPACHO — FECHA: ${v('ver_fecha')} GRADO: ${v('ver_grado')} COLOR: ${v('ver_color')} VERIFICADO POR: ${v('ver_por')}</p>
-      <p style="font-size:10px">FO-CS-001 REV.:01 &nbsp; NOTA: la verificacion solo a ser realizada en graneles &nbsp; Aprobado: 15/07/2026</p>
-      </body></html>`)
-    w.document.close()
-    w.focus()
-    setTimeout(() => w.print(), 300)
-  }
+  const print = () => printControlElaboracion(h)
 
   return (
     <div className="bg-[#EDE8E0] p-3 max-h-[80vh] overflow-auto text-black">
@@ -210,7 +212,7 @@ export default function ControlElaboracionForm({ onCancel, onSave, initialData }
       </div>
       <div className="flex justify-end gap-2 mt-3 max-w-[1100px] mx-auto">
         <button type="button" onClick={onCancel}>Cancelar</button>
-        <button type="button" className="border px-3 py-1" onClick={print}>Imprimir</button>
+        <button type="button" className="border px-3 py-1" data-yazoo-print="1" onClick={print}>Imprimir</button>
         <button type="button" className="bg-[#DCA54C] px-4 py-1 rounded-full font-semibold" onClick={save}>Guardar</button>
       </div>
     </div>

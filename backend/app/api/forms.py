@@ -2,13 +2,38 @@ import json
 import traceback
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
+from sqlalchemy import text
 
 from app.models.form_record import FormRecord
 from app.models.user import User
+from app.models.lot import Lot
+from app.core.database import engine
 from app.schemas.form_record import FormRecordCreate, FormRecordUpdate, FormRecordOut
 from app.api.deps import get_db, get_current_user
 
 router = APIRouter(prefix="/forms", tags=["forms"])
+
+
+def _ensure_lot_columns():
+    try:
+        with engine.begin() as conn:
+            conn.execute(text(
+                """
+                IF COL_LENGTH('form_records', 'lot_id') IS NULL
+                    ALTER TABLE form_records ADD lot_id INT NULL
+                """
+            ))
+            conn.execute(text(
+                """
+                IF COL_LENGTH('form_records', 'lot_number') IS NULL
+                    ALTER TABLE form_records ADD lot_number NVARCHAR(80) NULL
+                """
+            ))
+    except Exception:
+        pass
+
+
+_ensure_lot_columns()
 
 
 def _uname(db: Session, uid):
@@ -39,6 +64,8 @@ def _to_out(db: Session, row: FormRecord) -> FormRecordOut:
         form_type=row.form_type,
         form_code=row.form_code,
         title=row.title,
+        lot_id=getattr(row, "lot_id", None),
+        lot_number=getattr(row, "lot_number", None) or data.get("lot_number") or data.get("lote"),
         data=data,
         payload=data,
         status=row.status or "borrador",
@@ -64,10 +91,23 @@ def list_forms(db: Session = Depends(get_db), user: User = Depends(get_current_u
 @router.post("", response_model=FormRecordOut)
 def create_form(body: FormRecordCreate, db: Session = Depends(get_db), user: User = Depends(get_current_user)):
     payload = body.data or body.payload or {}
+    lot_id = body.lot_id or payload.get("lot_id")
+    lot_number = body.lot_number or payload.get("lot_number") or payload.get("lote")
+    if lot_id and not lot_number:
+        lot = db.query(Lot).filter(Lot.id == int(lot_id)).first()
+        if lot:
+            lot_number = lot.lot_number
+    if isinstance(payload, dict):
+        if lot_id:
+            payload["lot_id"] = lot_id
+        if lot_number:
+            payload["lot_number"] = lot_number
     row = FormRecord(
         form_type=body.form_type,
         form_code=body.form_code,
         title=body.title,
+        lot_id=int(lot_id) if lot_id else None,
+        lot_number=lot_number,
         data_json=json.dumps(payload, ensure_ascii=False, default=str),
         status=body.status or "borrador",
         created_by_id=user.id,
@@ -90,7 +130,16 @@ def update_form(form_id: int, body: FormRecordUpdate, db: Session = Depends(get_
         row.status = body.status
     incoming = body.data if body.data is not None else body.payload
     if incoming is not None:
+        if isinstance(incoming, dict):
+            if body.lot_id:
+                incoming["lot_id"] = body.lot_id
+            if body.lot_number:
+                incoming["lot_number"] = body.lot_number
         row.data_json = json.dumps(incoming, ensure_ascii=False, default=str)
+    if body.lot_id is not None:
+        row.lot_id = body.lot_id
+    if body.lot_number is not None:
+        row.lot_number = body.lot_number
     row.updated_by_id = user.id
     db.commit()
     db.refresh(row)

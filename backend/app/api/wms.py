@@ -80,7 +80,7 @@ def create_task(
         status="pending",
         product_id=lot.product_id,
         lot_id=lot.id,
-        from_location=getattr(lot, "location", None),
+        from_location=(payload.get("from_location") or getattr(lot, "location", None) or "Almacén central"),
         to_location=dest,
         qty_planned=qty,
         qty_done=0,
@@ -93,6 +93,23 @@ def create_task(
     db.add(task)
     db.commit()
     db.refresh(task)
+
+    scan_status = "pending"
+    try:
+        scanned = scan_task(
+            task.id,
+            {"barcode": lot.lot_number, "qty": qty},
+            request,
+            db,
+            current_user,
+        )
+        scan_status = scanned.get("status") or "done"
+    except HTTPException as e:
+        raise HTTPException(status_code=e.status_code, detail=e.detail)
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(status_code=400, detail=f"Tarea creada pero no se completó: {e}")
+
     try:
         create_audit_log(
             db=db,
@@ -106,7 +123,7 @@ def create_task(
         db.commit()
     except Exception:
         db.rollback()
-    return {"ok": True, "id": task.id}
+    return {"ok": True, "id": task.id, "status": scan_status, "lot_number": lot.lot_number}
 
 
 @router.post("/tasks/{task_id}/scan")
@@ -126,49 +143,59 @@ def scan_task(
     code = str(payload.get("barcode") or payload.get("scan") or "").strip()
     qty = float(payload.get("qty") or task.qty_planned or 0)
     if qty <= 0:
-        raise HTTPException(status_code=400, detail="Cantidad inválida")
+        raise HTTPException(status_code=400, detail="Cantidad inválida. Indica la cantidad en la tarea.")
 
     lot = db.query(Lot).filter(Lot.id == task.lot_id).first() if task.lot_id else None
     if not lot and code:
         lot = db.query(Lot).filter(Lot.lot_number == code).first()
     if not lot:
-        raise HTTPException(status_code=404, detail="Lote no encontrado")
+        raise HTTPException(status_code=404, detail="Lote no encontrado en la tarea")
 
-    if code and code != lot.lot_number:
-        raise HTTPException(status_code=400, detail=f"El código no coincide. Esperado {lot.lot_number}")
+    expected = (lot.lot_number or "").strip()
+    if code and expected and code.casefold() != expected.casefold():
+        raise HTTPException(status_code=400, detail=f"El código no coincide. Esperado {expected}")
 
     dest = task.to_location or "Laboratorio"
-    available = float(getattr(lot, "current_qty", 0) or 0)
-    if qty > available:
-        raise HTTPException(status_code=400, detail=f"Solo hay {available}")
-
+    origin = (task.from_location or getattr(lot, "location", None) or "Almacén central").strip()
     now = datetime.utcnow()
-    if task.task_type in ("transfer", "putaway", "receive"):
-        origin = (getattr(lot, "location", None) or "").strip()
-        if dest == origin and qty >= available:
-            pass
-        elif qty >= available:
-            lot.location = dest
-        else:
-            lot.current_qty = available - qty
-            split = Lot()
-            split.product_id = lot.product_id
-            split.lot_number = f"{lot.lot_number}-WMS{task.id}"
-            split.initial_qty = qty
-            split.current_qty = qty
-            split.expiry_date = lot.expiry_date
-            split.arrival_date = getattr(lot, "arrival_date", None)
-            split.location = dest
-            split.status = lot.status
-            db.add(split)
-        if hasattr(lot, "updated_at"):
-            lot.updated_at = now
+    try:
+        from app.services.stock import move_stock, qty_at
 
-    task.qty_done = float(task.qty_done or 0) + qty
-    task.status = "done" if task.qty_done >= float(task.qty_planned or 0) else "in_progress"
-    task.updated_at = now
-    task.assigned_to = current_user.id
-    db.commit()
+        available = qty_at(db, lot, origin)
+        if available <= 0:
+            available = float(getattr(lot, "current_qty", 0) or 0)
+            origin = (getattr(lot, "location", None) or origin).strip()
+        if qty > available:
+            raise HTTPException(status_code=400, detail=f"En {origin} solo hay {available}")
+        if task.task_type in ("transfer", "putaway", "receive") and origin.lower() != dest.lower():
+            move_stock(db, lot, origin, dest, qty)
+        lot.updated_at = now
+        task.qty_done = float(task.qty_done or 0) + qty
+        task.status = "done" if task.qty_done >= float(task.qty_planned or 0) else "in_progress"
+        task.updated_at = now
+        task.assigned_to = current_user.id
+        db.commit()
+    except HTTPException:
+        db.rollback()
+        raise
+    except ValueError as e:
+        db.rollback()
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(status_code=400, detail=f"No se pudo mover el lote: {e}")
+
+    from app.services.kardex import write_movement
+
+    write_movement(
+        db,
+        lot_id=lot.id,
+        user_id=current_user.id,
+        qty=float(qty),
+        destination=dest,
+        notes=f"WMS {task.task_type} {lot.lot_number} {origin} → {dest}",
+        kinds=("ajuste", "entrada", "ingreso", "transferencia", "transfer"),
+    )
 
     return {
         "ok": True,

@@ -5,30 +5,12 @@ const COLS = [1, 2, 3, 4, 5, 6]
 
 const DEFAULTS: Record<string, any> = { fecha: today() }
 
-export default function AguaOsmotizadaForm({ initialData, onCancel, onSave }: any) {
-  const { f: h, set } = useOfficialForm(DEFAULTS, initialData)
-
-  const save = () => {
-    const d = { ...h, fecha: h.fecha || today() }
-    console.log('SAVE', d, 'onSave?', typeof onSave)
-    if (!onSave) {
-      alert('onSave no llegó desde FormsPage')
-      return
-    }
-    onSave(d)
-  }
-  
+export function printAguaOsmotizada(h: Record<string, any> = {}) {
   const v = (k: string) => h[k] || ''
-  const inp = (k: string) => (
-    <input className="w-full h-8 bg-transparent text-center text-xs outline-none" value={v(k)} onChange={(e) => set(k, e.target.value)} />
-  )
-  const tds = (k: string) => COLS.map((n) => <td key={n} className="border border-black h-8 p-0">{inp(`${k}_${n}`)}</td>)
   const pv = (k: string) => COLS.map((n) => `<td>${v(`${k}_${n}`) || '&nbsp;'}</td>`).join('')
-
-  const print = () => {
-    const w = window.open('', '_blank', 'width=1000,height=800')
-    if (!w) return
-    w.document.write(`<!DOCTYPE html><html><head><meta charset="utf-8"/><title>Y-FO-CC-012</title>
+  const w = window.open('', '_blank', 'width=1000,height=800')
+  if (!w) return
+  w.document.write(`<!DOCTYPE html><html><head><meta charset="utf-8"/><title>Y-FO-CC-012</title>
       <style>
         body{font-family:Arial,sans-serif;font-size:11px;color:#000;padding:16px}
         table{border-collapse:collapse;width:100%;table-layout:fixed}
@@ -75,7 +57,21 @@ export default function AguaOsmotizadaForm({ initialData, onCancel, onSave }: an
     w.document.close()
     w.focus()
     setTimeout(() => w.print(), 300)
+}
+
+export default function AguaOsmotizadaForm({ initialData, onCancel, onSave }: any) {
+  const { f: h, set } = useOfficialForm(DEFAULTS, initialData)
+
+  const save = () => {
+    onSave?.({ ...h, fecha: h.fecha || today() })
   }
+
+  const v = (k: string) => h[k] || ''
+  const inp = (k: string) => (
+    <input className="w-full h-8 bg-transparent text-center text-xs outline-none" value={v(k)} onChange={(e) => set(k, e.target.value)} />
+  )
+  const tds = (k: string) => COLS.map((n) => <td key={n} className="border border-black h-8 p-0">{inp(`${k}_${n}`)}</td>)
+  const print = () => printAguaOsmotizada(h)
 
   return (
     <div className="bg-[#EDE8E0] p-4 max-h-[80vh] overflow-auto text-[#1A120E]">
@@ -139,7 +135,7 @@ export default function AguaOsmotizadaForm({ initialData, onCancel, onSave }: an
       </div>
       <div className="flex justify-end gap-2 mt-3 max-w-[980px] mx-auto">
         <button type="button" onClick={onCancel}>Cancelar</button>
-        <button type="button" className="border px-3 py-1" onClick={print}>Imprimir</button>
+        <button type="button" className="border px-3 py-1" data-yazoo-print="1" onClick={print}>Imprimir</button>
         <button type="button" className="bg-[#DCA54C] px-4 py-1 rounded-full font-semibold" onClick={save}>Guardar</button>
       </div>
     </div>

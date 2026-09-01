@@ -9,7 +9,31 @@ class MovementType(str, enum.Enum):
     retiro_analisis = "retiro_analisis"
     despacho_produccion = "despacho_produccion"
     ajuste = "ajuste"
-    solucion_interna = "solucion_interna"  # cuando se prepara una solución secundaria
+    solucion_interna = "solucion_interna"
+    transferencia = "transferencia"
+
+
+MOVEMENT_TYPE_ALIASES = {
+    "entrada": MovementType.ingreso,
+    "ingreso": MovementType.ingreso,
+    "salida": MovementType.retiro_analisis,
+    "retiro": MovementType.retiro_analisis,
+    "retiro_analisis": MovementType.retiro_analisis,
+    "despacho": MovementType.despacho_produccion,
+    "despacho_produccion": MovementType.despacho_produccion,
+    "ajuste": MovementType.ajuste,
+    "solucion_interna": MovementType.solucion_interna,
+    "transferencia": MovementType.transferencia,
+    "transfer": MovementType.transferencia,
+}
+
+
+def resolve_movement_type(raw) -> MovementType:
+    if isinstance(raw, MovementType):
+        return raw
+    key = str(raw or "ajuste").strip().lower()
+    return MOVEMENT_TYPE_ALIASES.get(key, MovementType.ajuste)
+
 
 class Movement(Base):
     __tablename__ = "movements"
@@ -17,7 +41,7 @@ class Movement(Base):
     id: Mapped[int] = mapped_column(primary_key=True, index=True)
     lot_id: Mapped[int] = mapped_column(ForeignKey("lots.id"), nullable=False, index=True)
     user_id: Mapped[int] = mapped_column(ForeignKey("users.id"), nullable=False)
-    type: Mapped[MovementType] = mapped_column(SAEnum(MovementType), nullable=False)
+    type: Mapped[str] = mapped_column(String(40), nullable=False)
     qty: Mapped[float] = mapped_column(Float, nullable=False)
     destination: Mapped[str] = mapped_column(String(200), nullable=True)
     notes: Mapped[str] = mapped_column(Text, nullable=True)

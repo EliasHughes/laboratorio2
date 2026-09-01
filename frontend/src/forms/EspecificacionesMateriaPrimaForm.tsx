@@ -21,12 +21,11 @@ const ROWS: [string, string, string][] = [
   ['densidad', 'Densidad (g/ml)', '1.33 – 1.42'],
 ]
 
-export default function EspecificacionesMateriaPrimaForm({ onCancel, onSave }: any) {
-  const [h, setH] = useState<any>({ producto: 'Azúcar líquida', codigo: 'N/A', proveedor: 'N/A', ...load() })
+export default function EspecificacionesMateriaPrimaForm({ onCancel, onSave, initialData }: any) {
+  const [h, setH] = useState<any>({ producto: 'Azúcar líquida', codigo: 'N/A', proveedor: 'N/A', ...(initialData || {}) })
   const set = (k: string, v: string) => setH((p: any) => ({ ...p, [k]: v }))
   const v = (k: string) => h[k] || ''
   const save = () => {
-    localStorage.setItem(KEY, JSON.stringify(h))
     onSave?.(h)
   }
 
@@ -129,7 +128,7 @@ export default function EspecificacionesMateriaPrimaForm({ onCancel, onSave }: a
       </div>
       <div className="flex justify-end gap-2 mt-3 max-w-[720px] mx-auto">
         <button type="button" onClick={onCancel}>Cancelar</button>
-        <button type="button" className="border px-3 py-1" onClick={print}>Imprimir</button>
+        <button type="button" className="border px-3 py-1" data-yazoo-print="1" onClick={print}>Imprimir</button>
         <button type="button" className="bg-[#DCA54C] px-4 py-1 rounded-full font-semibold" onClick={save}>Guardar</button>
       </div>
     </div>

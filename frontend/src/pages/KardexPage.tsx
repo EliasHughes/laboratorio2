@@ -32,25 +32,28 @@ interface AuditLog {
 }
 
 export default function KardexPage() {
-  const [tab, setTab] = useState<'kardex' | 'audit'>('kardex')
+  const [tab, setTab] = useState<'kardex' | 'audit' | 'calidad'>('kardex')
   const [movements, setMovements] = useState<Movement[]>([])
   const [audits, setAudits] = useState<AuditLog[]>([])
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')
   const [error, setError] = useState('')
+  const [forms, setForms] = useState<any[]>([])
 
   const load = async () => {
     setLoading(true)
     setError('')
     try {
-      const [movRes, auditRes] = await Promise.allSettled([
+        const [movRes, auditRes, formRes] = await Promise.allSettled([
         api.get<Movement[]>('/movements'),
         api.get<AuditLog[]>('/audit'),
+        api.get('/forms'),
       ])
       if (movRes.status === 'fulfilled') setMovements(movRes.value.data)
       if (auditRes.status === 'fulfilled') setAudits(auditRes.value.data)
-      if (movRes.status === 'rejected' && auditRes.status === 'rejected') {
-        setError('No se pudieron cargar los registros')
+      if (formRes.status === 'fulfilled') {
+        const d = formRes.value.data
+        setForms(Array.isArray(d) ? d : [])
       }
     } catch {
       setError('Error de conexión')
@@ -79,6 +82,16 @@ export default function KardexPage() {
       (a.action || '').toLowerCase().includes(q) ||
       (a.entity || '').toLowerCase().includes(q) ||
       (a.details || '').toLowerCase().includes(q)
+    )
+  })
+
+    const filteredForms = forms.filter((f) => {
+    const q = search.toLowerCase()
+    if (!q) return true
+    return (
+      String(f.lot_number || '').toLowerCase().includes(q) ||
+      String(f.form_code || '').toLowerCase().includes(q) ||
+      String(f.title || '').toLowerCase().includes(q)
     )
   })
 
@@ -113,6 +126,15 @@ export default function KardexPage() {
           >
             <ScrollText className="w-3.5 h-3.5" />
             Auditoría
+          </button>
+                    <button
+            type="button"
+            onClick={() => setTab('calidad')}
+            className={`flex items-center gap-1.5 px-4 py-1.5 rounded-md text-sm font-medium transition ${
+              tab === 'calidad' ? 'bg-yazoo-gold text-caribe-dark' : 'text-stone-400 hover:text-stone-200'
+            }`}
+          >
+            Calidad
           </button>
         </div>
 
@@ -195,8 +217,35 @@ export default function KardexPage() {
                     )
                   })}
                 </tbody>
-              </table>
+                           </table>
             </div>
+          )
+        ) : tab === 'calidad' ? (
+          filteredForms.length === 0 ? (
+            <div className="p-12 text-center text-stone-500">No hay formularios para esa búsqueda</div>
+          ) : (
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b border-caribe-border text-left text-xs text-stone-400 uppercase">
+                  <th className="px-5 py-3">Código</th>
+                  <th className="px-5 py-3">Título</th>
+                  <th className="px-5 py-3">Lote</th>
+                  <th className="px-5 py-3">Estado</th>
+                  <th className="px-5 py-3">Usuario</th>
+                </tr>
+              </thead>
+              <tbody>
+                {filteredForms.map((f) => (
+                  <tr key={f.id} className="border-b border-caribe-border/40">
+                    <td className="px-5 py-2 text-amber-400 font-mono text-xs">{f.form_code}</td>
+                    <td className="px-5 py-2 text-stone-200">{f.title}</td>
+                    <td className="px-5 py-2 font-mono text-xs">{f.lot_number || '—'}</td>
+                    <td className="px-5 py-2 text-stone-400">{f.status}</td>
+                    <td className="px-5 py-2 text-stone-400">{f.created_by_name || '—'}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           )
         ) : filteredAudit.length === 0 ? (
           <div className="p-12 text-center text-stone-500">

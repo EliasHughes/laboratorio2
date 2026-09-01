@@ -1,4 +1,4 @@
-from datetime import date, datetime
+from datetime import date, datetime, timedelta
 from typing import Optional
 
 from fastapi import APIRouter, Depends, HTTPException, status
@@ -95,14 +95,15 @@ def create_receiving(
 
     now = datetime.utcnow()
     arrival = body.arrival_date or date.today()
-    st = _lot_status(body.expiry_date)
+    expiry = body.expiry_date or (arrival + timedelta(days=730))
+    st = _lot_status(expiry)
 
     lot = Lot()
     lot.product_id = body.product_id
     lot.lot_number = lot_number
     lot.initial_qty = body.quantity
     lot.current_qty = body.quantity
-    lot.expiry_date = body.expiry_date
+    lot.expiry_date = expiry
     lot.arrival_date = arrival
     lot.location = body.location or "Almacén central"
     lot.status = st
@@ -125,37 +126,19 @@ def create_receiving(
             detail=f"No se pudo guardar el lote: {str(e)}",
         )
 
-    # Kardex / auditoría: si fallan, el lote YA quedó guardado
-    try:
-        from app.models.movement import Movement
+    from app.services.kardex import write_movement
 
-        mov = Movement()
-        if hasattr(mov, "lot_id"):
-            mov.lot_id = lot.id
-        if hasattr(mov, "product_id"):
-            mov.product_id = body.product_id
-        if hasattr(mov, "movement_type"):
-            mov.movement_type = "entrada"
-        if hasattr(mov, "type"):
-            mov.type = "entrada"
-        if hasattr(mov, "qty"):
-            mov.qty = body.quantity
-        if hasattr(mov, "quantity"):
-            mov.quantity = body.quantity
-        if hasattr(mov, "reason"):
-            mov.reason = "Recepción / Ingreso"
-        if hasattr(mov, "notes"):
-            mov.notes = body.notes
-        if hasattr(mov, "user_id"):
-            mov.user_id = current_user.id
-        if hasattr(mov, "created_by"):
-            mov.created_by = current_user.id
-        if hasattr(mov, "created_at"):
-            mov.created_at = now
-        db.add(mov)
-        db.commit()
-    except Exception:
-        db.rollback()
+    kardex_error = write_movement(
+        db,
+        lot_id=lot.id,
+        user_id=current_user.id,
+        qty=float(body.quantity),
+        destination=body.location or "Almacén central",
+        notes=body.notes or "Recepción / Ingreso",
+        kinds=("ingreso", "entrada", "ajuste"),
+    )
+    if kardex_error == "ok":
+        kardex_error = None
 
     try:
         from app.api.deps import create_audit_log
@@ -173,4 +156,6 @@ def create_receiving(
     except Exception:
         db.rollback()
 
-    return _serialize_lot(lot, product)
+    data = _serialize_lot(lot, product)
+    data["kardex"] = "ok" if not kardex_error else kardex_error
+    return data

@@ -10,15 +10,45 @@ const load = () => {
   }
 }
 
-export default function RegistroCatadoForm({ onCancel, onSave }: any) {
-  const [h, setH] = useState<any>(() => ({ fecha: load().fecha || today(), ...load() }))
+export function printRegistroCatado(h: Record<string, any> = {}) {
+  const d = { ...h, fecha: h.fecha || today() }
+  const w = window.open('', '_blank')
+  if (!w) return
+  w.document.write(`<!DOCTYPE html><html><head><meta charset="utf-8"/><title>Y-FO-CC-008</title>
+    <style>body{font-family:Arial;padding:24px} .ln{border-bottom:1px solid #000;min-width:180px;display:inline-block}</style></head><body>
+    <div style="display:grid;grid-template-columns:90px 1fr 160px;border:1px solid #000">
+      <div style="padding:8px;text-align:center"><img src="${location.origin}/yazoo.png" height="44"/></div>
+      <div style="display:flex;align-items:center;justify-content:center;font-weight:700;border-left:1px solid #000;border-right:1px solid #000">REGISTRO SECCIONES DE CATADO</div>
+      <div style="padding:8px;font-size:11px">CODIGO: Y-FO-CC-008<br/>REV: 01<br/>Página 1 de 1</div>
+    </div>
+    <h3 style="text-align:center">REGISTRO SECCIONES DE CATADO</h3>
+    <p>Fecha: <span class="ln">${d.fecha}</span></p>
+    <p>Muestra Catada: <span class="ln">${d.muestra || ''}</span> &nbsp; Lote: <span class="ln">${d.lote || ''}</span></p>
+    <p>N° de Catadores: <span class="ln">${d.n_cat || ''}</span></p>
+    <p>N° de Pruebas: <span class="ln">${d.n_pru || ''}</span></p>
+    <p>N° de Aciertos: <span class="ln">${d.n_ac || ''}</span></p>
+    <p>% de confiabilidad: <span class="ln">${d.conf || ''}</span></p>
+    <p>Índice Aceptación / Rechazo: <span class="ln">${d.indice || ''}</span></p>
+    <p>Observaciones:<br/>${d.obs1 || ''}<br/>${d.obs2 || ''}<br/>${d.obs3 || ''}</p>
+    <p>Firma: <span class="ln">${d.firma || ''}</span></p>
+    <p>Conclusión:</p>
+    <p>Aprobado: <span class="ln">${d.aprobado || ''}</span> &nbsp; Rechazado: <span class="ln">${d.rechazado || ''}</span></p>
+    <p>Verificado: <span class="ln">${d.verif || ''}</span></p>
+    <p style="font-size:10px;display:flex;justify-content:space-between"><span>Y-FO-CS-001 Rev.: 01</span><span>Aprobado: 24/03/2026</span></p>
+    </body></html>`)
+  w.document.close()
+  w.focus()
+  setTimeout(() => w.print(), 250)
+}
+
+export default function RegistroCatadoForm({ onCancel, onSave, initialData }: any) {
+  const [h, setH] = useState<any>(() => ({ fecha: today(), ...(initialData || {}) }))
   const set = (k: string, v: string) => {
     if (k === 'fecha') return
     setH((p: any) => ({ ...p, [k]: v }))
   }
   const save = () => {
     const d = { ...h, fecha: h.fecha || today() }
-    localStorage.setItem(KEY, JSON.stringify(d))
     onSave?.(d)
   }
   const line = (label: string, k: string, wide = false) => (
@@ -33,36 +63,7 @@ export default function RegistroCatadoForm({ onCancel, onSave }: any) {
     </label>
   )
 
-    const print = () => {
-    const d = { ...h, fecha: h.fecha || today() }
-    const w = window.open('', '_blank')
-    if (!w) return
-    w.document.write(`<!DOCTYPE html><html><head><meta charset="utf-8"/><title>Y-FO-CC-008</title>
-      <style>body{font-family:Arial;padding:24px} .ln{border-bottom:1px solid #000;min-width:180px;display:inline-block}</style></head><body>
-      <div style="display:grid;grid-template-columns:90px 1fr 160px;border:1px solid #000">
-        <div style="padding:8px;text-align:center"><img src="${location.origin}/yazoo.png" height="44"/></div>
-        <div style="display:flex;align-items:center;justify-content:center;font-weight:700;border-left:1px solid #000;border-right:1px solid #000">REGISTRO SECCIONES DE CATADO</div>
-        <div style="padding:8px;font-size:11px">CODIGO: Y-FO-CC-008<br/>REV: 01<br/>Página 1 de 1</div>
-      </div>
-      <h3 style="text-align:center">REGISTRO SECCIONES DE CATADO</h3>
-      <p>Fecha: <span class="ln">${d.fecha}</span></p>
-      <p>Muestra Catada: <span class="ln">${d.muestra || ''}</span> &nbsp; Lote: <span class="ln">${d.lote || ''}</span></p>
-      <p>N° de Catadores: <span class="ln">${d.n_cat || ''}</span></p>
-      <p>N° de Pruebas: <span class="ln">${d.n_pru || ''}</span></p>
-      <p>N° de Aciertos: <span class="ln">${d.n_ac || ''}</span></p>
-      <p>% de confiabilidad: <span class="ln">${d.conf || ''}</span></p>
-      <p>Índice Aceptación / Rechazo: <span class="ln">${d.indice || ''}</span></p>
-      <p>Observaciones:<br/>${d.obs1 || ''}<br/>${d.obs2 || ''}<br/>${d.obs3 || ''}</p>
-      <p>Firma: <span class="ln">${d.firma || ''}</span></p>
-      <p>Conclusión:</p>
-      <p>Aprobado: <span class="ln">${d.aprobado || ''}</span> &nbsp; Rechazado: <span class="ln">${d.rechazado || ''}</span></p>
-      <p>Verificado: <span class="ln">${d.verif || ''}</span></p>
-      <p style="font-size:10px;display:flex;justify-content:space-between"><span>Y-FO-CS-001 Rev.: 01</span><span>Aprobado: 24/03/2026</span></p>
-      </body></html>`)
-    w.document.close()
-    w.focus()
-    setTimeout(() => w.print(), 250)
-  }
+  const print = () => printRegistroCatado(h)
 
   return (
     <div className="bg-[#EFEAE3] p-4 max-h-[80vh] overflow-auto">
@@ -124,7 +125,7 @@ export default function RegistroCatadoForm({ onCancel, onSave }: any) {
         <button type="button" onClick={onCancel}>
           Cancelar
         </button>
-        <button type="button" className="border border-[#1A120E] px-3 py-1" onClick={print}>
+        <button type="button" className="border border-[#1A120E] px-3 py-1" data-yazoo-print="1" onClick={print}>
           Imprimir
         </button>
         <button type="button" className="bg-[#DCA54C] px-4 py-1 rounded-full font-semibold" onClick={save}>

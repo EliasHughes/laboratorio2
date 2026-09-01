@@ -18,6 +18,9 @@ MODULES_ACTIONS = {
     "reports": ["view", "create"],
     "users": ["view", "create", "edit", "delete"],
     "roles": ["view", "create", "edit", "delete"],
+    "warehouse": ["view", "edit"],
+    "wms": ["view", "create", "edit"],
+    "purchases": ["view", "create", "edit"],
 }
 
 def seed():
@@ -130,7 +133,28 @@ def seed():
                 db.commit()
             print("ℹ️ Usuario admin ya existe")
 
-        print("✅ Roles y permisos sembrados correctamente")
+        from app.models.product import Product
+
+        catalog = [
+            ("ALC-ETOH", "Alcohol etílico", "granel", "L"),
+            ("AZU-LIQ", "Azúcar líquida", "insumo", "L"),
+            ("AGUA-OSM", "Agua osmotizada", "insumo", "L"),
+            ("RON-BLC", "Ron blanco", "producto_terminado", "L"),
+        ]
+        for code, name, cat, unit in catalog:
+            if not db.query(Product).filter(Product.code == code).first():
+                db.add(
+                    Product(
+                        code=code,
+                        name=name,
+                        category=cat,
+                        unit=unit,
+                        min_stock=0,
+                        is_active=True,
+                    )
+                )
+        db.commit()
+        print("Roles, permisos y productos base sembrados")
 
     except Exception as e:
         print(f"❌ Error: {e}")
