@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { finishPrintHtml } from './printEvidence'
 
 const KEY = 'form-y-fo-si-004'
 const today = () => new Date().toISOString().slice(0, 10)
@@ -46,7 +47,7 @@ const SVG_TANK = `<svg viewBox="0 0 260 140" width="250" height="135" xmlns="htt
   <line x1="55" y1="90" x2="20" y2="120" stroke="#111"/><text x="2" y="132" font-size="7">Descarga</text>
 </svg>`
 
-export default function InspeccionContenedoresChasisForm({ onCancel, onSave, initialData }: any) {
+export default function InspeccionContenedoresChasisForm({ onCancel, onSave, initialData, formId }: any) {
   const [h, setH] = useState<any>(() => ({ fecha: today(), ...(initialData || {}) }))
   const set = (k: string, v: string) => {
     if (k === 'fecha') return
@@ -58,11 +59,9 @@ export default function InspeccionContenedoresChasisForm({ onCancel, onSave, ini
     onSave?.(d)
   }
 
-  const print = () => {
+  const print = async () => {
     const logo = `${window.location.origin}/yazoo.png`
-    const w = window.open('', '_blank', 'width=1100,height=800')
-    if (!w) return
-    w.document.write(`<!DOCTYPE html><html><head><meta charset="utf-8"/><title>Y-FO-SI-004</title>
+    const html = `<!DOCTYPE html><html><head><meta charset="utf-8"/><title>Y-FO-SI-004</title>
       <style>body{font-family:Arial;font-size:11px;padding:12px}table{border-collapse:collapse;width:100%}
       td,th{border:1px solid #000;padding:3px}</style></head><body>
       <div style="display:flex;justify-content:space-between"><img src="${logo}" height="40"/>
@@ -84,10 +83,8 @@ export default function InspeccionContenedoresChasisForm({ onCancel, onSave, ini
       <p>Personal en la carga: ${v('personal')}</p>
       <p>Inspeccionado por: ${v('insp')} Supervisor: ${v('sup')} Chofer: ${v('chofer')}</p>
       <p>Hora de Entrada: ${v('h_in')} Hora de Salida: ${v('h_out')}</p>
-      </body></html>`)
-    w.document.close()
-    w.focus()
-    setTimeout(() => w.print(), 300)
+      </body></html>`
+    await finishPrintHtml(html, formId)
   }
 
   return (

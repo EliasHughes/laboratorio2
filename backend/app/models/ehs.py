@@ -29,3 +29,14 @@ class EhsRecord(Base):
     status = Column(String(30), nullable=False, default="abierto")
     payload = Column(Text, nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow)
+
+class EhsAttachment(Base):
+    __tablename__ = "ehs_attachments"
+
+    id = Column(Integer, primary_key=True)
+    kind = Column(String(30), nullable=False)
+    ref_id = Column(Integer, nullable=False)
+    filename = Column(String(255), nullable=False)
+    rel_path = Column(String(400), nullable=False)
+    mime = Column(String(80), nullable=True)
+    created_at = Column(DateTime, default=datetime.utcnow)

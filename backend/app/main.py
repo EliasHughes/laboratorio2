@@ -29,8 +29,15 @@ async def lifespan(app: FastAPI):
         run_startup_backup()
     except Exception as e:
         print(f"[backup] {e}")
+    try:
+        import os
+        from app.core.config import get_settings as _gs
+        os.makedirs(_gs().EVIDENCE_ROOT, exist_ok=True)
+    except Exception as e:
+        print(f"[evidencias] {e}")    
     yield
     logger.info("Cerrando aplicacion...")
+   
 
 app = FastAPI(
     title=settings.PROJECT_NAME,

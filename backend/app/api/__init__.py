@@ -5,6 +5,8 @@ from app.api import auth, users, roles, products, lots, movements, audit
 from app.api import forms
 from app.api import ehs
 
+
+
 api_router = APIRouter()
 
 api_router.include_router(auth.router)

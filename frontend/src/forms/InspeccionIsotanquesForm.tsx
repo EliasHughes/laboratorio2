@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { finishPrintHtml } from './printEvidence'
 
 const KEY = 'form-y-fo-cc-018'
 const today = () => new Date().toISOString().slice(0, 10)
@@ -55,7 +56,7 @@ const SVG_BOX = `<svg viewBox="0 0 480 240" width="320" height="160" xmlns="http
   <text x="240" y="168" text-anchor="middle" font-size="11" fill="#2C4254">PISO</text>
 </svg>`
 
-export default function InspeccionIsotanquesForm({ onCancel, onSave, initialData }: any) {
+export default function InspeccionIsotanquesForm({ onCancel, onSave, initialData, formId }: any) {
   const [h, setH] = useState<any>(() => ({ fecha: today(), ...(initialData || {}) }))
   const set = (k: string, v: string) => {
     if (k === 'fecha') return
@@ -69,10 +70,8 @@ export default function InspeccionIsotanquesForm({ onCancel, onSave, initialData
     `<tr><td style="text-align:left">${it.replace(' (contenedor)', '')}</td>
       ${OPT.map((o) => `<td>${h[it] === o ? '☑' : '☐'}</td>`).join('')}</tr>`
 
-  const print = () => {
-    const w = window.open('', '_blank', 'width=1000,height=800')
-    if (!w) return
-    w.document.write(`<!DOCTYPE html><html><head><meta charset="utf-8"/><title>Y-FO-CC-018</title>
+  const print = async () => {
+    const html = `<!DOCTYPE html><html><head><meta charset="utf-8"/><title>Y-FO-CC-018</title>
       <style>body{font-family:Arial;font-size:12px;padding:16px}table{border-collapse:collapse;width:100%}
       td,th{border:1px solid #000;padding:3px;text-align:center}.ln{border-bottom:1px solid #000;min-width:200px;display:inline-block}</style></head><body>
       <h3 style="text-align:center">INSPECCION DE ISOTANQUES, CISTERNAS Y CONTENEDORES (CAMION)</h3>
@@ -90,10 +89,8 @@ export default function InspeccionIsotanquesForm({ onCancel, onSave, initialData
       <p>Rechazado ${h.resultado === 'Rechazado' ? '☑' : '☐'} Aprobado ${h.resultado === 'Aprobado' ? '☑' : '☐'}
       Inspeccionado Por: ${h.inspector || ''}</p>
       <p style="text-align:right;font-size:10px">Aprobado: 24/02/2020</p>
-      </body></html>`)
-    w.document.close()
-    w.focus()
-    setTimeout(() => w.print(), 300)
+      </body></html>`
+    await finishPrintHtml(html, formId)
   }
 
   const line = 'border-0 border-b border-black bg-transparent w-full outline-none'

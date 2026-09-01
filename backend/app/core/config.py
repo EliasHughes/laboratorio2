@@ -20,6 +20,8 @@ class Settings(BaseSettings):
     ENVIRONMENT: str = "development"
     PROJECT_NAME: str = "Yazoo Lab Inventory"
     API_V1_STR: str = "/api/v1"
+    API_V1_STR: str = "/api/v1"
+    EVIDENCE_ROOT: str = r"C:\YazooData\evidencias"
 
     # CORS
     BACKEND_CORS_ORIGINS: List[str] = [

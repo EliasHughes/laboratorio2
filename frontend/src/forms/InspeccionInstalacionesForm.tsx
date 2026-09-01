@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { finishPrintHtml } from './printEvidence'
 
 const KEY = 'form-y-fo-si-010'
 const today = () => new Date().toISOString().slice(0, 10)
@@ -44,7 +45,7 @@ const ITEMS = [
   '¿LOS QUÍMICOS SE ENCUENTRAN IDENTIFICADOS?',
 ]
 
-export default function InspeccionInstalacionesForm({ onCancel, onSave, initialData }: any) {
+export default function InspeccionInstalacionesForm({ onCancel, onSave, initialData, formId }: any) {
   const [h, setH] = useState<any>(() => ({ fecha: today(), ...(initialData || {}) }))
   const set = (k: string, v: string) => setH((p: any) => ({ ...p, [k]: v }))
   const save = () => {
@@ -52,11 +53,9 @@ export default function InspeccionInstalacionesForm({ onCancel, onSave, initialD
     onSave?.(d)
   }
 
-  const print = () => {
+  const print = async () => {
     const logo = `${window.location.origin}/yazoo.png`
-    const w = window.open('', '_blank', 'width=900,height=1100')
-    if (!w) return
-    w.document.write(`<!DOCTYPE html><html><head><meta charset="utf-8"/><title>Y-FO-SI-010</title>
+    const html = `<!DOCTYPE html><html><head><meta charset="utf-8"/><title>Y-FO-SI-010</title>
       <style>
         body{font-family:Arial;font-size:11px;padding:12px}
         table{border-collapse:collapse;width:100%}
@@ -82,10 +81,8 @@ export default function InspeccionInstalacionesForm({ onCancel, onSave, initialD
         }).join('')}
       </table>
       <p style="font-size:10px;display:flex;justify-content:space-between"><span>Y-FO-CS-001 REV. 01</span><span>Aprobado: 20/06/2024</span></p>
-      </body></html>`)
-    w.document.close()
-    w.focus()
-    setTimeout(() => w.print(), 300)
+      </body></html>`
+    await finishPrintHtml(html, formId)
   }
 
   return (

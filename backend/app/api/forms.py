@@ -1,6 +1,7 @@
 import json
 import traceback
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, UploadFile, File
+from fastapi.responses import FileResponse
 from sqlalchemy.orm import Session
 from sqlalchemy import text
 
@@ -144,3 +145,107 @@ def update_form(form_id: int, body: FormRecordUpdate, db: Session = Depends(get_
     db.commit()
     db.refresh(row)
     return _to_out(db, row)
+
+import os
+import uuid
+from app.core.config import get_settings
+from app.models.form_attachment import FormAttachment
+
+PHOTO_TYPES = {
+    "inspeccion_instalaciones",
+    "inspeccion_isotanques",
+    "inspeccion_contenedores_chasis",
+}
+PHOTO_CODES = {"Y-FO-SI-018", "Y-FO-BI-018", "Y-FO-CC-038", "Y-FO-SI-004"}
+ALLOWED_IMG = {".jpg", ".jpeg", ".png", ".webp"}
+
+
+def _photo_ok(row: FormRecord) -> bool:
+    return (row.form_type or "") in PHOTO_TYPES or (row.form_code or "").upper() in PHOTO_CODES
+
+
+@router.get("/{form_id}/attachments")
+def list_attachments(form_id: int, db: Session = Depends(get_db), _: User = Depends(get_current_user)):
+    rows = (
+        db.query(FormAttachment)
+        .filter(FormAttachment.form_id == form_id)
+        .order_by(FormAttachment.id.desc())
+        .all()
+    )
+    return [
+        {
+            "id": r.id,
+            "filename": r.filename,
+            "mime": r.mime,
+            "created_at": r.created_at.isoformat() if r.created_at else None,
+        }
+        for r in rows
+    ]
+
+def _evidence_root() -> str:
+    raw = getattr(get_settings(), "EVIDENCE_ROOT", None) or r"C:\YazooData\evidencias"
+    os.makedirs(raw, exist_ok=True)
+    return raw
+
+@router.post("/{form_id}/attachments")
+async def upload_attachment(
+    form_id: int,
+    file: UploadFile = File(...),
+    db: Session = Depends(get_db),
+    _: User = Depends(get_current_user),
+):
+    row = db.query(FormRecord).filter(FormRecord.id == form_id).first()
+    if not row:
+        raise HTTPException(404, "Formulario no encontrado")
+    if not _photo_ok(row):
+        raise HTTPException(400, "Este formulario no admite evidencias")
+    ext = os.path.splitext(file.filename or "")[1].lower() or ".jpg"
+    if ext not in ALLOWED_IMG:
+        raise HTTPException(400, "Solo jpg, png o webp")
+    root = _evidence_root()
+    folder = os.path.join(root, str(form_id))
+    os.makedirs(folder, exist_ok=True)
+    name = f"{uuid.uuid4().hex}{ext}"
+    dest = os.path.join(folder, name)
+    data = await file.read()
+    if len(data) > 8 * 1024 * 1024:
+        raise HTTPException(400, "Imagen mayor a 8 MB")
+    with open(dest, "wb") as fh:
+        fh.write(data)
+    att = FormAttachment(
+        form_id=form_id,
+        filename=file.filename or name,
+        rel_path=os.path.join(str(form_id), name),
+        mime=file.content_type or "image/jpeg",
+    )
+    db.add(att)
+    db.commit()
+    db.refresh(att)
+    return {"id": att.id, "filename": att.filename}
+
+
+@router.get("/attachments/{att_id}/file")
+def get_attachment_file(att_id: int, db: Session = Depends(get_db), _: User = Depends(get_current_user)):
+    att = db.query(FormAttachment).filter(FormAttachment.id == att_id).first()
+    if not att:
+        raise HTTPException(404, "No encontrado")
+    path = os.path.join(get_settings().EVIDENCE_ROOT, att.rel_path)
+    if not os.path.isfile(path):
+        raise HTTPException(404, "Archivo ausente en disco")
+    return FileResponse(path, media_type=att.mime or "image/jpeg", filename=att.filename)
+
+
+@router.delete("/attachments/{att_id}")
+def delete_attachment(att_id: int, db: Session = Depends(get_db), _: User = Depends(get_current_user)):
+    att = db.query(FormAttachment).filter(FormAttachment.id == att_id).first()
+    if not att:
+        raise HTTPException(404, "No encontrado")
+    path = os.path.join(get_settings().EVIDENCE_ROOT, att.rel_path)
+    try:
+        if os.path.isfile(path):
+            os.remove(path)
+    except Exception:
+        pass
+    db.delete(att)
+    db.commit()
+    return {"ok": True}

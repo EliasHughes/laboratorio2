@@ -15,6 +15,8 @@ import InspeccionInstalacionesForm from '../forms/InspeccionInstalacionesForm'
 import ControlEnvejecimientoForm from '../forms/ControlEnvejecimientoForm'
 import EspecificacionesMateriaPrimaForm from '../forms/EspecificacionesMateriaPrimaForm'
 import InspeccionContenedoresChasisForm from '../forms/InspeccionContenedoresChasisForm'
+import EvidenceBox from './EvidenceBox'
+
 
 const CATALOG = [
   { type: 'certificado_analisis', code: 'Y-FO-CC-013', title: 'Certificado de Análisis / Certificate of Analysis' },
@@ -31,6 +33,12 @@ const CATALOG = [
   { type: 'control_envejecimiento', code: 'Y-FO-CO-001', title: 'Control de proceso envejecimiento' },
   { type: 'especificaciones_mp', code: 'Y-FO-CC-056-02', title: 'Especificaciones de materia prima e insumo' },
   { type: 'inspeccion_contenedores_chasis', code: 'Y-FO-SI-004', title: 'Inspección contenedores, isotanque y chasis' },
+]
+
+const PHOTO_TYPES = [
+  'inspeccion_instalaciones',
+  'inspeccion_isotanques',
+  'inspeccion_contenedores_chasis',
 ]
 
 function catalogOf(type: string) {
@@ -390,7 +398,7 @@ export default function FormsPage() {
             ) : selectedType === 'recepcion_productos_granel' ? (
               <RecepcionGranelForm key={`${selectedType}-${editId ?? 'new'}`} initialData={formData} onCancel={() => setModal(false)} onSave={wrapSave('recepcion_productos_granel')} />
             ) : selectedType === 'inspeccion_isotanques' ? (
-              <InspeccionIsotanquesForm key={`${selectedType}-${editId ?? 'new'}`} initialData={formData} onCancel={() => setModal(false)} onSave={wrapSave('inspeccion_isotanques')} />
+             <InspeccionIsotanquesForm key={`${selectedType}-${editId ?? 'new'}`} formId={editId} initialData={formData} onCancel={() => setModal(false)} onSave={wrapSave('inspeccion_isotanques')} />
             ) : selectedType === 'control_elaboracion' ? (
               <ControlElaboracionForm key={`${selectedType}-${editId ?? 'new'}`} initialData={formData} onCancel={() => setModal(false)} onSave={wrapSave('control_elaboracion')} />
             ) : selectedType === 'recepcion_pulpas' ? (
@@ -398,15 +406,20 @@ export default function FormsPage() {
             ) : selectedType === 'control_envasado' ? (
               <ControlEnvasadoForm key={`${selectedType}-${editId ?? 'new'}`} initialData={formData} onCancel={() => setModal(false)} onSave={wrapSave('control_envasado')} />
             ) : selectedType === 'inspeccion_instalaciones' ? (
-              <InspeccionInstalacionesForm key={`${selectedType}-${editId ?? 'new'}`} initialData={formData} onCancel={() => setModal(false)} onSave={wrapSave('inspeccion_instalaciones')} />
+              <InspeccionInstalacionesForm key={`${selectedType}-${editId ?? 'new'}`} formId={editId} initialData={formData} onCancel={() => setModal(false)} onSave={wrapSave('inspeccion_instalaciones')} />
             ) : selectedType === 'control_envejecimiento' ? (
               <ControlEnvejecimientoForm key={`${selectedType}-${editId ?? 'new'}`} initialData={formData} onCancel={() => setModal(false)} onSave={wrapSave('control_envejecimiento')} />
             ) : selectedType === 'especificaciones_mp' ? (
               <EspecificacionesMateriaPrimaForm key={`${selectedType}-${editId ?? 'new'}`} initialData={formData} onCancel={() => setModal(false)} onSave={wrapSave('especificaciones_mp')} />
             ) : selectedType === 'inspeccion_contenedores_chasis' ? (
-              <InspeccionContenedoresChasisForm key={`${selectedType}-${editId ?? 'new'}`} initialData={formData} onCancel={() => setModal(false)} onSave={wrapSave('inspeccion_contenedores_chasis')} />
+              <InspeccionContenedoresChasisForm key={`${selectedType}-${editId ?? 'new'}`} formId={editId} initialData={formData} onCancel={() => setModal(false)} onSave={wrapSave('inspeccion_contenedores_chasis')} />
             ) : (
               <div className="bg-white p-6 rounded-xl text-[#1A120E]">Formulario no implementado</div>
+            )} 
+            {PHOTO_TYPES.includes(selectedType) && (
+              <div className="mt-3">
+                <EvidenceBox formId={editId} />
+              </div>
             )}
           </div>
         </div>

@@ -8,7 +8,14 @@ from app.core.database import get_db
 from app.api.deps import require_permission
 from app.models.user import User
 from app.models.incident import Incident
-from app.models.ehs import EhsMonthly, EhsRecord
+from app.models.ehs import EhsMonthly, EhsRecord, EhsAttachment
+
+import os
+import uuid
+from fastapi import File, UploadFile
+from fastapi.responses import FileResponse
+from app.core.config import get_settings
+
 
 router = APIRouter(prefix="/ehs", tags=["EHS"])
 
@@ -199,3 +206,93 @@ def summary(db: Session = Depends(get_db), _: User = Depends(require_permission(
     months = db.query(EhsMonthly).all()
     acc = sum(m.accidents or 0 for m in months)
     return {"incidents": len(inc), "open": open_i, "accidents_year": acc}
+
+ALLOWED_IMG = {".jpg", ".jpeg", ".png", ".webp"}
+
+
+def _ehs_root() -> str:
+    raw = getattr(get_settings(), "EVIDENCE_ROOT", None) or r"C:\YazooData\evidencias"
+    path = os.path.join(raw, "ehs")
+    os.makedirs(path, exist_ok=True)
+    return path
+
+
+@router.get("/{kind}/{ref_id}/attachments")
+def list_ehs_att(kind: str, ref_id: int, db: Session = Depends(get_db), _: User = Depends(require_permission("ehs", "view"))):
+    if kind not in {"incidents", "permisos", "capacitacion", "ncr"}:
+        raise HTTPException(400, "Tipo no válido")
+    rows = db.query(EhsAttachment).filter(EhsAttachment.kind == kind, EhsAttachment.ref_id == ref_id).all()
+    return [
+        {
+            "id": r.id,
+            "filename": r.filename,
+            "mime": r.mime,
+            "created_at": r.created_at.isoformat() if r.created_at else None,
+        }
+        for r in rows
+    ]
+
+
+@router.post("/{kind}/{ref_id}/attachments")
+async def upload_ehs_att(
+    kind: str,
+    ref_id: int,
+    file: UploadFile = File(...),
+    db: Session = Depends(get_db),
+    _: User = Depends(require_permission("ehs", "create")),
+):
+    if kind not in {"incidents", "permisos", "capacitacion", "ncr"}:
+        raise HTTPException(400, "Tipo no válido")
+    ext = os.path.splitext(file.filename or "")[1].lower() or ".jpg"
+    if ext not in ALLOWED_IMG:
+        raise HTTPException(400, "Solo jpg, png o webp")
+    folder = os.path.join(_ehs_root(), kind, str(ref_id))
+    os.makedirs(folder, exist_ok=True)
+    name = f"{uuid.uuid4().hex}{ext}"
+    dest = os.path.join(folder, name)
+    data = await file.read()
+    if len(data) > 8 * 1024 * 1024:
+        raise HTTPException(400, "Imagen mayor a 8 MB")
+    with open(dest, "wb") as fh:
+        fh.write(data)
+    att = EhsAttachment(
+        kind=kind,
+        ref_id=ref_id,
+        filename=file.filename or name,
+        rel_path=os.path.join("ehs", kind, str(ref_id), name),
+        mime=file.content_type or "image/jpeg",
+    )
+    db.add(att)
+    db.commit()
+    db.refresh(att)
+    return {"id": att.id, "filename": att.filename}
+
+
+@router.get("/attachments/{att_id}/file")
+def get_ehs_file(att_id: int, db: Session = Depends(get_db), _: User = Depends(require_permission("ehs", "view"))):
+    att = db.query(EhsAttachment).filter(EhsAttachment.id == att_id).first()
+    if not att:
+        raise HTTPException(404, "No encontrado")
+    path = os.path.join(_ehs_root().rsplit("ehs", 1)[0].rstrip("\\/"), att.rel_path)
+    if not os.path.isfile(path):
+        path = os.path.join(getattr(get_settings(), "EVIDENCE_ROOT", r"C:\YazooData\evidencias"), att.rel_path)
+    if not os.path.isfile(path):
+        raise HTTPException(404, "Archivo ausente en disco")
+    return FileResponse(path, media_type=att.mime or "image/jpeg", filename=att.filename)
+
+
+@router.delete("/attachments/{att_id}")
+def del_ehs_file(att_id: int, db: Session = Depends(get_db), _: User = Depends(require_permission("ehs", "create"))):
+    att = db.query(EhsAttachment).filter(EhsAttachment.id == att_id).first()
+    if not att:
+        raise HTTPException(404, "No encontrado")
+    root = getattr(get_settings(), "EVIDENCE_ROOT", None) or r"C:\YazooData\evidencias"
+    path = os.path.join(root, att.rel_path)
+    try:
+        if os.path.isfile(path):
+            os.remove(path)
+    except Exception:
+        pass
+    db.delete(att)
+    db.commit()
+    return {"ok": True}
