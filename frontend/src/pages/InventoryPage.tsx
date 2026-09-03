@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState, FormEvent } from 'react'
-import PageHeader from '../components/PageHeader'
+import PageHeader from './PageHeader'
 import api from '../services/api'
 import {
   Package,

@@ -11,7 +11,7 @@ const load = () => {
 }
 
 export function printRegistroCatado(h: Record<string, any> = {}) {
-  const d = { ...h, fecha: h.fecha || today() }
+  const d: any = { ...h, fecha: h.fecha || today() }
   const w = window.open('', '_blank')
   if (!w) return
   w.document.write(`<!DOCTYPE html><html><head><meta charset="utf-8"/><title>Y-FO-CC-008</title>
@@ -48,7 +48,7 @@ export default function RegistroCatadoForm({ onCancel, onSave, initialData }: an
     setH((p: any) => ({ ...p, [k]: v }))
   }
   const save = () => {
-    const d = { ...h, fecha: h.fecha || today() }
+    const d: any = { ...h, fecha: h.fecha || today() }
     onSave?.(d)
   }
   const line = (label: string, k: string, wide = false) => (

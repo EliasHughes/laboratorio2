@@ -116,7 +116,7 @@ export default function InspeccionInsumosForm({ onCancel, onSave, initialData }:
   }
 
   const print = () => {
-    const d = { ...h, fecha: h.fecha || today() }
+    const d: any = { ...h, fecha: h.fecha || today() }
     const tipos = (d.tipos || []).join(', ')
     const merc = (d.mercados || []).join(', ')
     const tinsp = (d.tipos_insp || []).join(', ')

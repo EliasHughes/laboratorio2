@@ -215,7 +215,7 @@ export default function QualityBoardsPage() {
     <div className="space-y-6">
       <div>
         <p className="text-[10px] tracking-[0.2em] uppercase text-[#DCA54C]">Fase 8b</p>
-        <h2 className="text-2xl font-semibold text-[#1A120E] mt-1">Ubicaciones de calidad</h2>
+        <h2 className="text-2xl font-semibold text-[#1A120E] mt-1">Control De Cuarto</h2>
         <p className="text-sm text-[#5C5046]">Las mismas tres hojas del Excel de planta. Importa y exporta .xlsx.</p>
       </div>
 
