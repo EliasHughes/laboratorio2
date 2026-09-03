@@ -40,6 +40,7 @@ const navItems = [
   { to: '/wms', icon: ScanLine, label: 'WMS Piso', perm: 'wms:view' },
   { to: '/purchases', icon: ShoppingCart, label: 'Compras', perm: 'purchases:view' },
   { to: '/safety', icon: Shield, label: 'Seguridad industrial', perm: 'ehs:view' },
+  { to: '/boards', icon: Beaker, label: 'Ubicaciones calidad', perm: 'inventory:view' },
 ]
 
 export default function Layout() {
@@ -65,18 +66,18 @@ export default function Layout() {
     <div className="flex h-screen bg-[#FCFCF9] overflow-hidden">
       {mobileOpen && (
         <div
-          className="fixed inset-0 bg-black/50 z-20 lg:hidden"
+          className="fixed inset-0 bg-black/50 z-20 md:hidden"
           onClick={() => setMobileOpen(false)}
         />
       )}
 
       <aside
         className={`
-          fixed lg:static inset-y-0 left-0 z-30
+          fixed md:static inset-y-0 left-0 z-30
           flex flex-col bg-[#1A120E] border-r border-[#3D2E24]
           ${collapsed ? 'w-20' : 'w-64'}
-          ${mobileOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
-        `}
+          ${mobileOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}
+          `}
       >
         <div className="h-16 flex items-center justify-between px-4 border-b border-[#3D2E24]">
           {!collapsed && (

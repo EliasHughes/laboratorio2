@@ -205,3 +205,87 @@ def scan_task(
         "lot_number": lot.lot_number,
         "to_location": dest,
     }
+
+from pydantic import BaseModel
+from typing import Optional
+from app.models.lot_stock import QualityBoard
+
+BOARDS = {"desarrollo", "granel", "envasado"}
+
+
+class BoardIn(BaseModel):
+    board: str
+    lot_number: Optional[str] = None
+    product_name: str = ""
+    qty: float = 0
+    unit: Optional[str] = "L"
+    color: str = "verde"
+    note: Optional[str] = None
+
+
+def _bout(r: QualityBoard):
+    return {
+        "id": r.id,
+        "board": r.board,
+        "lot_number": r.lot_number,
+        "product_name": r.product_name,
+        "qty": r.qty,
+        "unit": r.unit,
+        "color": r.color,
+        "note": r.note,
+        "created_at": r.created_at.isoformat() if r.created_at else None,
+        "updated_at": r.updated_at.isoformat() if r.updated_at else None,
+    }
+
+
+@router.get("/boards")
+def list_boards(board: str = "", db: Session = Depends(get_db), _: User = Depends(get_current_user)):
+    q = db.query(QualityBoard)
+    if board:
+        q = q.filter(QualityBoard.board == board)
+    return [_bout(r) for r in q.order_by(QualityBoard.id.desc()).all()]
+
+
+@router.post("/boards")
+def add_board(body: BoardIn, db: Session = Depends(get_db), _: User = Depends(get_current_user)):
+    if body.board not in BOARDS:
+        raise HTTPException(400, "Tablero inválido")
+    row = QualityBoard(
+        board=body.board,
+        lot_number=body.lot_number,
+        product_name=body.product_name,
+        qty=body.qty,
+        unit=body.unit,
+        color=body.color or "verde",
+        note=body.note,
+    )
+    db.add(row)
+    db.commit()
+    db.refresh(row)
+    return _bout(row)
+
+
+@router.put("/boards/{bid}")
+def edit_board(bid: int, body: BoardIn, db: Session = Depends(get_db), _: User = Depends(get_current_user)):
+    row = db.query(QualityBoard).filter(QualityBoard.id == bid).first()
+    if not row:
+        raise HTTPException(404, "No encontrado")
+    row.lot_number = body.lot_number
+    row.product_name = body.product_name
+    row.qty = body.qty
+    row.unit = body.unit
+    row.color = body.color
+    row.note = body.note
+    row.updated_at = datetime.utcnow()
+    db.commit()
+    return _bout(row)
+
+
+@router.delete("/boards/{bid}")
+def del_board(bid: int, db: Session = Depends(get_db), _: User = Depends(get_current_user)):
+    row = db.query(QualityBoard).filter(QualityBoard.id == bid).first()
+    if not row:
+        raise HTTPException(404, "No encontrado")
+    db.delete(row)
+    db.commit()
+    return {"ok": True}

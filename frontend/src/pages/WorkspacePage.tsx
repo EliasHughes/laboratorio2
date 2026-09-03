@@ -31,6 +31,7 @@ const groups = [
     title: 'Seguridad industrial',
     items: [
       { to: '/safety', icon: Shield, label: 'Tablero EHS', hint: 'Siniestralidad, incidentes, inspecciones', perm: 'ehs:view' },
+     
     ],
   },
   {
@@ -39,6 +40,7 @@ const groups = [
       { to: '/forms', icon: FileText, label: 'Formularios Y-FO', hint: 'Registros oficiales de calidad', perm: 'forms:view' },
       { to: '/solutions', icon: Beaker, label: 'Soluciones internas', hint: 'Preparación y consumo', perm: 'solutions:view' },
       { to: '/reports', icon: FileBarChart, label: 'Reportes', hint: 'Listados e impresión', perm: 'reports:view' },
+      { to: '/boards', icon: Beaker, label: 'CONTROL DE CUARTO' },
     ],
   },
   {

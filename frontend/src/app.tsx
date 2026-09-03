@@ -17,6 +17,7 @@ import WmsPage from './pages/WmsPage'
 import PurchasesPage from './pages/PurchasesPage'
 import WorkspacePage from './pages/WorkspacePage'
 import SafetyPage from './pages/SafetyPage'
+import QualityBoardsPage from './pages/QualityBoardsPage'
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { isAuthenticated, isLoading } = useAuth()
@@ -70,8 +71,10 @@ function AppRoutes() {
         <Route path="wms" element={<PermRoute perm="wms:view"><WmsPage /></PermRoute>} />
         <Route path="purchases" element={<PermRoute perm="purchases:view"><PurchasesPage /></PermRoute>} />
         <Route path="safety" element={<PermRoute perm="ehs:view"><SafetyPage /></PermRoute>} />
+        <Route path="boards" element={<PermRoute perm="inventory:view"><QualityBoardsPage /></PermRoute>} />
       </Route>
       <Route path="*" element={<Navigate to="/" replace />} />
+      
     </Routes>
   )
 }
