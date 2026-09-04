@@ -36,6 +36,8 @@ def enrich_lot(lot, db: Session = None) -> LotOut:
         coa_number=lot.coa_number,
         created_at=lot.created_at,
         stocks=stocks,
+        min_qty=getattr(lot, "min_qty", None),
+        min_qty: Optional[float] = None
     )
 
 
@@ -201,3 +203,61 @@ def ficha_lote(
         ],
     }
 
+from datetime import date
+from pydantic import BaseModel
+from app.models.movement import Movement, MovementType
+from app.models.lot import Lot
+
+
+class LabAdjustIn(BaseModel):
+    current_qty: float | None = None
+    min_qty: float | None = None
+    expiration_date: date | None = None
+    notes: str | None = None
+
+
+@router.put("/{lot_id}/lab")
+def lab_update(
+    lot_id: int,
+    body: LabAdjustIn,
+    request: Request,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_permission("inventory", "edit")),
+):
+    lot = LotRepository.get_by_id(db, lot_id)
+    if not lot:
+        raise HTTPException(404, "Lote no encontrado")
+    loc = (lot.location or "").lower()
+    if "lab" not in loc and "laboratorio" not in loc and "calidad" not in loc:
+        raise HTTPException(400, "Este lote no pertenece al almacén de laboratorio")
+
+    old = float(lot.current_qty or 0)
+    if body.min_qty is not None:
+        lot.min_qty = body.min_qty
+    if body.expiration_date is not None:
+        lot.expiry_date = body.expiration_date
+    if body.notes is not None:
+        lot.notes = body.notes
+    if body.current_qty is not None:
+        delta = float(body.current_qty) - old
+        lot.current_qty = body.current_qty
+        if delta != 0:
+            db.add(Movement(
+                lot_id=lot.id,
+                user_id=current_user.id,
+                movement_type=MovementType.ajuste,
+                qty=abs(delta),
+                notes=f"Ajuste lab {'+' if delta > 0 else ''}{delta}. {body.notes or ''}",
+            ))
+    db.commit()
+    db.refresh(lot)
+    try:
+        create_audit_log(
+            db=db, user=current_user, action="UPDATE", entity="Lot",
+            entity_id=lot.id,
+            details=f"Ajuste lab {lot.lot_number} qty={lot.current_qty} min={getattr(lot, 'min_qty', None)}",
+            ip_address=get_client_ip(request),
+        )
+    except Exception:
+        pass
+    return enrich_lot(lot, db)

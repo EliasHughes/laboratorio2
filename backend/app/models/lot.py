@@ -20,6 +20,7 @@ class Lot(Base):
     lot_number = Column(String(80), unique=True, nullable=False, index=True)
     initial_qty = Column(Float, nullable=False)
     current_qty = Column(Float, nullable=False)
+    min_qty = Column(Float, nullable=True)
     # Nombres reales en SQL Server:
     expiry_date = Column(Date, nullable=False, index=True)
     arrival_date = Column(Date, nullable=True)

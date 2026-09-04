@@ -40,6 +40,7 @@ def create_tables():
         "IF COL_LENGTH('dbo.users','manager_id') IS NULL ALTER TABLE dbo.users ADD manager_id INT NULL;",
         "IF COL_LENGTH('dbo.users','signature_data') IS NULL ALTER TABLE dbo.users ADD signature_data NVARCHAR(MAX) NULL;",
         "IF COL_LENGTH('dbo.users','extra_screens') IS NULL ALTER TABLE dbo.users ADD extra_screens NVARCHAR(MAX) NULL;",
+        "IF COL_LENGTH('dbo.lots','min_qty') IS NULL ALTER TABLE dbo.lots ADD min_qty FLOAT NULL;",
     ]
     with engine.begin() as conn:
         for s in stmts:

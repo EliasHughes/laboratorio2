@@ -7,11 +7,11 @@ import {
 import { useAuth } from '../hooks/useAuth'
 
 const MODULES = [
-  { to: '/forms', perm: 'forms:view', color: 'bg-[#C45C26]', icon: Beaker, title: 'LIMS Laboratorio', desc: 'Ensayos, CoA, reactivos', n: '6 submódulos' },
+  { to: '/lab', perm: 'inventory:view', color: 'bg-[#C45C26]', icon: Beaker, title: 'LIMS Laboratorio', desc: 'Stock lab, semáforo, vencimientos', n: 'Almacén lab' },
   { to: '/forms', perm: 'forms:view', color: 'bg-[#DCA54C]', icon: FileText, title: 'Registros de laboratorio', desc: '14 formularios Y-FO', n: '14 formatos' },
   { to: '/reports?module=produccion', perm: 'dashboard:view', color: 'bg-[#3F7D4E]', icon: Factory, title: 'Producción', desc: 'OT, granel, envasado', n: 'Próximo' },
   { to: '/purchases', perm: 'purchases:view', color: 'bg-[#8B5E34]', icon: ShoppingCart, title: 'Compras y proveedores', desc: 'OC y recepción compra', n: 'Fase 2' },
-  { to: '/inventory', perm: 'inventory:view', color: 'bg-[#B45309]', icon: Warehouse, title: 'Inventario y almacenes', desc: 'Central + lab, WMS, FEFO', n: 'Activo' },
+  { to: '/inventory', perm: 'inventory:view', color: 'bg-[#B45309]', icon: Warehouse, title: 'Inventario y almacenes', desc: 'Almacén central, WMS, FEFO', n: 'Activo' },
   { to: '/reports?module=ventas', perm: 'dashboard:view', color: 'bg-[#9A3412]', icon: Users, title: 'Ventas y clientes', desc: 'Pedidos y facturas', n: 'Próximo' },
   { to: '/reports?module=logistica', perm: 'dashboard:view', color: 'bg-[#1D4E89]', icon: Truck, title: 'Logística y distribución', desc: 'Rutas y despacho', n: 'Próximo' },
   { to: '/reports?module=comercio', perm: 'dashboard:view', color: 'bg-[#0F766E]', icon: Globe, title: 'Comercio exterior', desc: 'Import / export', n: 'Próximo' },
@@ -20,7 +20,7 @@ const MODULES = [
   { to: '/reports?module=rrhh', perm: 'dashboard:view', color: 'bg-[#1E3A5F]', icon: Contact, title: 'RRHH y nómina', desc: 'Personal y capacitación', n: 'Próximo' },
   { to: '/safety', perm: 'ehs:view', color: 'bg-[#9A3412]', icon: Shield, title: 'EHS Seguridad industrial', desc: 'IF/IG, incidentes, EPP', n: 'Activo' },
   { to: '/reports?module=finanzas', perm: 'dashboard:view', color: 'bg-[#6B21A8]', icon: Landmark, title: 'Finanzas y contabilidad', desc: 'CXC, CXP, diario', n: 'Próximo' },
-  { to: '/kardex', perm: 'kardex:view', color: 'bg-[#44403C]', icon: MonitorSmartphone, title: 'Sistema y auditoría', desc: 'Kardex, usuarios, roles', n: 'Activo' },
+  { to: '/users', perm: 'users:view', color: 'bg-[#44403C]', icon: MonitorSmartphone, title: 'Sistema y auditoría', desc: 'Usuarios, roles, kardex', n: 'Activo' },
 ]
 
 export default function WorkspacePage() {
