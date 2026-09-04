@@ -21,6 +21,7 @@ MODULES_ACTIONS = {
     "warehouse": ["view", "edit"],
     "wms": ["view", "create", "edit"],
     "purchases": ["view", "create", "edit"],
+    "approvals": ["view", "decide"],
 }
 
 def seed():

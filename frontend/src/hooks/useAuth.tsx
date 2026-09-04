@@ -103,12 +103,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }, [])
 
-  const can = (perm: string) => {
-  const role = String(user?.role?.name || user?.role || '').toLowerCase()
-  if (role.includes('admin')) return true
-  return (user?.permissions || []).includes(perm)
-}
-
+    const can = (perm: string) => {
+    const raw: any = user?.role
+    const roleName = String(raw?.name || raw || '').toLowerCase()
+    if (roleName.includes('admin')) return true
+    return (user?.permissions || []).includes(perm)
+  }
+  
   return (
     <AuthContext.Provider
       value={{

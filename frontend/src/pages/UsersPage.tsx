@@ -20,6 +20,7 @@ const SCREENS = [
   { key: 'reports:view', group: 'Informes', label: 'Reportes' },
   { key: 'users:view', group: 'Sistema', label: 'Usuarios' },
   { key: 'roles:view', group: 'Sistema', label: 'Roles' },
+  { key: 'forms:view', group: 'LIMS', label: 'Aprobaciones' },
 ]
 
 const UNIQUE_KEYS = [...new Set(SCREENS.map((s) => s.key))]
