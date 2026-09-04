@@ -1,0 +1,70 @@
+from fastapi import APIRouter, Depends, HTTPException
+from pydantic import BaseModel
+from sqlalchemy.orm import Session
+
+from app.api.deps import get_db, get_current_user
+from app.models.form_record import FormRecord
+from app.models.user import User
+from app.api.forms import _to_out
+
+router = APIRouter(prefix="/approvals", tags=["approvals"])
+
+
+class DecideIn(BaseModel):
+    action: str  # approve | reject
+    note: str | None = None
+
+
+@router.get("/inbox")
+def inbox(db: Session = Depends(get_db), user: User = Depends(get_current_user)):
+    rows = (
+        db.query(FormRecord)
+        .filter(
+            (
+                (FormRecord.supervisor_id == user.id)
+                & (FormRecord.supervisor_status == "pending")
+            )
+            | (
+                (FormRecord.manager_id == user.id)
+                & (FormRecord.manager_status == "pending")
+            )
+        )
+        .order_by(FormRecord.id.desc())
+        .all()
+    )
+    return [_to_out(db, r) for r in rows]
+
+
+@router.post("/{form_id}/decide")
+def decide(form_id: int, body: DecideIn, db: Session = Depends(get_db), user: User = Depends(get_current_user)):
+    row = db.query(FormRecord).filter(FormRecord.id == form_id).first()
+    if not row:
+        raise HTTPException(404, "Formulario no encontrado")
+    action = (body.action or "").lower()
+    if action not in ("approve", "reject"):
+        raise HTTPException(400, "action debe ser approve o reject")
+    sig = getattr(user, "signature_data", None) or (user.full_name or user.username)
+
+    if row.supervisor_id == user.id and row.supervisor_status == "pending":
+        row.supervisor_status = "approved" if action == "approve" else "rejected"
+        row.supervisor_note = body.note
+        row.supervisor_signature = sig
+        if action == "reject":
+            row.status = "rechazado"
+        elif row.manager_id:
+            row.manager_status = "pending"
+            row.status = "pendiente_gerente"
+        else:
+            row.status = "aprobado"
+    elif row.manager_id == user.id and row.manager_status == "pending":
+        row.manager_status = "approved" if action == "approve" else "rejected"
+        row.manager_note = body.note
+        row.manager_signature = sig
+        row.status = "aprobado" if action == "approve" else "rechazado"
+    else:
+        raise HTTPException(403, "No tienes una aprobación pendiente en este registro")
+
+    row.updated_by_id = user.id
+    db.commit()
+    db.refresh(row)
+    return _to_out(db, row)

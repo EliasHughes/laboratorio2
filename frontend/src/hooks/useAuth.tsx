@@ -103,11 +103,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }, [])
 
-    const can = (code: string) => {
-    const role = String(user?.role || '').toLowerCase()
-    if (role === 'admin' || role === 'administrador') return true
-    return (user?.permissions || []).includes(code)
-  }
+  const can = (perm: string) => {
+  const role = String(user?.role?.name || user?.role || '').toLowerCase()
+  if (role.includes('admin')) return true
+  return (user?.permissions || []).includes(perm)
+}
 
   return (
     <AuthContext.Provider

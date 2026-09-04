@@ -30,10 +30,38 @@ def has_permission(user: User, module: str, action: str) -> bool:
         return False
     return any(p.code == code for p in user.role_rel.permissions)
 
+import json
+
+def _extra(user: User) -> list[str]:
+    raw = getattr(user, "extra_screens", None) or ""
+    if not raw:
+        return []
+    try:
+        data = json.loads(raw)
+        return [str(x) for x in data] if isinstance(data, list) else []
+    except Exception:
+        return []
+
+
+def has_permission(user: User, module: str, action: str) -> bool:
+    if not user or not user.is_active:
+        return False
+    if user.role_rel and user.role_rel.name == "admin" and user.role_rel.is_system:
+        return True
+    code = f"{module}:{action}"
+    if code in _extra(user):
+        return True
+    if not user.role_rel:
+        return False
+    return any(p.code == code for p in user.role_rel.permissions)
+
 
 def get_user_permissions(user: User) -> list[str]:
-    if not user or not user.role_rel:
-        return []
-    if user.role_rel.name == "admin" and user.role_rel.is_system:
-        return list(ALL_PERMISSIONS)
-    return [p.code for p in user.role_rel.permissions]
+    role_perms = []
+    if user and user.role_rel:
+        if user.role_rel.name == "admin" and user.role_rel.is_system:
+            role_perms = [p.code for p in user.role_rel.permissions]
+        else:
+            role_perms = [p.code for p in user.role_rel.permissions]
+    extra = _extra(user) if user else []
+    return sorted(set(role_perms + extra))

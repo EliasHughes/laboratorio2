@@ -1,4 +1,5 @@
 import api from '../services/api'
+import { printInApp } from './printInApp'
 
 export async function wantEvidence(): Promise<boolean> {
   return window.confirm(
@@ -43,6 +44,7 @@ export async function evidenceSectionHtml(formId: number | null | undefined): Pr
   }
 }
 
+
 export async function finishPrintHtml(html: string, formId: number | null | undefined) {
   const withPhotos = await wantEvidence()
   let out = html
@@ -50,10 +52,22 @@ export async function finishPrintHtml(html: string, formId: number | null | unde
     const ev = await evidenceSectionHtml(formId)
     out = html.includes('</body>') ? html.replace('</body>', `${ev}</body>`) : html + ev
   }
-  const w = window.open('', '_blank', 'width=900,height=1100')
-  if (!w) return
-  w.document.write(out)
-  w.document.close()
-  w.focus()
-  setTimeout(() => w.print(), 400)
+  printInApp(out)
+}
+
+export function signaturesBlock(r: any) {
+  const cell = (title: string, sig?: string) => {
+    const img = sig && String(sig).startsWith('data:image')
+      ? `<img src="${sig}" style="height:42px"/>`
+      : `<div style="min-height:42px;font-size:12px">${sig || '—'}</div>`
+    return `<td style="width:33%;border:1px solid #1A120E;padding:8px;vertical-align:top">
+      <div style="font-size:10px;text-transform:uppercase">${title}</div>${img}</td>`
+  }
+  return `<table style="width:100%;border-collapse:collapse;margin-top:16px">
+    <tr>
+      ${cell('Analista / inspector', r.author_signature || r.created_by_name)}
+      ${cell('Supervisor', r.supervisor_signature || (r.supervisor_status === 'pending' ? 'PENDIENTE' : ''))}
+      ${cell('Gerente / director', r.manager_signature || (r.manager_status === 'pending' ? 'PENDIENTE' : ''))}
+    </tr>
+  </table>`
 }

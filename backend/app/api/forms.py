@@ -16,23 +16,28 @@ router = APIRouter(prefix="/forms", tags=["forms"])
 
 
 def _ensure_lot_columns():
+    cols = [
+        ("lot_id", "INT NULL"),
+        ("lot_number", "NVARCHAR(80) NULL"),
+        ("author_signature", "NVARCHAR(MAX) NULL"),
+        ("supervisor_id", "INT NULL"),
+        ("manager_id", "INT NULL"),
+        ("supervisor_status", "NVARCHAR(20) NULL"),
+        ("manager_status", "NVARCHAR(20) NULL"),
+        ("supervisor_note", "NVARCHAR(400) NULL"),
+        ("manager_note", "NVARCHAR(400) NULL"),
+        ("supervisor_signature", "NVARCHAR(MAX) NULL"),
+        ("manager_signature", "NVARCHAR(MAX) NULL"),
+    ]
     try:
         with engine.begin() as conn:
-            conn.execute(text(
-                """
-                IF COL_LENGTH('form_records', 'lot_id') IS NULL
-                    ALTER TABLE form_records ADD lot_id INT NULL
-                """
-            ))
-            conn.execute(text(
-                """
-                IF COL_LENGTH('form_records', 'lot_number') IS NULL
-                    ALTER TABLE form_records ADD lot_number NVARCHAR(80) NULL
-                """
-            ))
+            for name, typ in cols:
+                conn.execute(text(
+                    f"IF COL_LENGTH('dbo.form_records','{name}') IS NULL "
+                    f"ALTER TABLE dbo.form_records ADD {name} {typ}"
+                ))
     except Exception:
-        pass
-
+        traceback.print_exc()
 
 _ensure_lot_columns()
 
@@ -75,7 +80,13 @@ def _to_out(db: Session, row: FormRecord) -> FormRecordOut:
         created_by_name=_uname(db, getattr(row, "created_by_id", None)),
         updated_by_name=_uname(db, getattr(row, "updated_by_id", None)),
         created_at=getattr(row, "created_at", None),
-        updated_at=getattr(row, "updated_at", None),
+        author_signature=getattr(row, "author_signature", None),
+        supervisor_id=getattr(row, "supervisor_id", None),
+        manager_id=getattr(row, "manager_id", None),
+        supervisor_status=getattr(row, "supervisor_status", None),
+        manager_status=getattr(row, "manager_status", None),
+        supervisor_signature=getattr(row, "supervisor_signature", None),
+        manager_signature=getattr(row, "manager_signature", None),
     )
 
 
@@ -117,7 +128,25 @@ def create_form(body: FormRecordCreate, db: Session = Depends(get_db), user: Use
     db.add(row)
     db.commit()
     db.refresh(row)
+
+    sig = getattr(user, "signature_data", None) or (user.full_name or user.username)
+    row.author_signature = sig
+    row.supervisor_id = getattr(user, "supervisor_id", None)
+    row.manager_id = getattr(user, "manager_id", None)
+    if row.supervisor_id:
+        row.supervisor_status = "pending"
+        row.status = "pendiente_supervisor"
+    elif row.manager_id:
+        row.manager_status = "pending"
+        row.status = "pendiente_gerente"
+    else:
+        row.status = row.status or "aprobado"
+    db.commit()
+    db.refresh(row)
+
     return _to_out(db, row)
+
+
 
 
 @router.put("/{form_id}", response_model=FormRecordOut)

@@ -39,5 +39,12 @@ class FormRecordOut(BaseModel):
     updated_at: Optional[datetime] = None
     lot_id: Optional[int] = None
     lot_number: Optional[str] = None
+    author_signature: Optional[str] = None
+    supervisor_id: Optional[int] = None
+    manager_id: Optional[int] = None
+    supervisor_status: Optional[str] = None
+    manager_status: Optional[str] = None
+    supervisor_signature: Optional[str] = None
+    manager_signature: Optional[str] = None
 
     model_config = ConfigDict(from_attributes=True)

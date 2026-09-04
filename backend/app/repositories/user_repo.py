@@ -1,8 +1,10 @@
 from sqlalchemy.orm import Session, joinedload
+from sqlalchemy import or_
+
 from app.models.user import User
 from app.schemas.user import UserCreate, UserUpdate
 from app.core.security import get_password_hash
-from sqlalchemy import or_
+
 
 class UserRepository:
 
@@ -19,7 +21,7 @@ class UserRepository:
     def get_by_username(db: Session, username: str):
         return (
             db.query(User)
-            .options(joinedload(User.role_rel))  # ajusta el nombre de la relación si es distinto
+            .options(joinedload(User.role_rel))
             .filter(User.username == username)
             .first()
         )
@@ -28,18 +30,18 @@ class UserRepository:
     def get_by_login(db: Session, login_id: str):
         login_id = (login_id or "").strip()
         if not login_id:
-          return None
+            return None
         return (
-        db.query(User)
-        .options(joinedload(User.role_rel))
-        .filter(
-            or_(
-                User.username == login_id,
-                User.email == login_id,
+            db.query(User)
+            .options(joinedload(User.role_rel))
+            .filter(
+                or_(
+                    User.username == login_id,
+                    User.email == login_id,
+                )
             )
+            .first()
         )
-        .first()
-    )
 
     @staticmethod
     def get_all(db: Session, skip: int = 0, limit: int = 100) -> list[User]:
@@ -61,11 +63,15 @@ class UserRepository:
             hashed_password=get_password_hash(data.password),
             role_id=data.role_id,
             is_active=data.is_active,
+            position=getattr(data, "position", None),
+            supervisor_id=getattr(data, "supervisor_id", None),
+            manager_id=getattr(data, "manager_id", None),
+            signature_data=getattr(data, "signature_data", None),
+            extra_screens=getattr(data, "extra_screens", None),
         )
         db.add(user)
         db.commit()
         db.refresh(user)
-        # recargar con role
         return UserRepository.get_by_id(db, user.id)
 
     @staticmethod
@@ -80,6 +86,16 @@ class UserRepository:
             user.is_active = data.is_active
         if data.password:
             user.hashed_password = get_password_hash(data.password)
+        if getattr(data, "position", None) is not None:
+            user.position = data.position
+        if getattr(data, "supervisor_id", None) is not None:
+            user.supervisor_id = data.supervisor_id
+        if getattr(data, "manager_id", None) is not None:
+            user.manager_id = data.manager_id
+        if getattr(data, "signature_data", None) is not None:
+            user.signature_data = data.signature_data
+        if getattr(data, "extra_screens", None) is not None:
+            user.extra_screens = data.extra_screens
         db.commit()
         db.refresh(user)
         return UserRepository.get_by_id(db, user.id)

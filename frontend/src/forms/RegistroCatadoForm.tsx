@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { printInApp } from './printInApp'
 
 const KEY = 'form-y-fo-cc-008'
 const today = () => new Date().toISOString().slice(0, 10)
@@ -12,9 +13,7 @@ const load = () => {
 
 export function printRegistroCatado(h: Record<string, any> = {}) {
   const d: any = { ...h, fecha: h.fecha || today() }
-  const w = window.open('', '_blank')
-  if (!w) return
-  w.document.write(`<!DOCTYPE html><html><head><meta charset="utf-8"/><title>Y-FO-CC-008</title>
+  printInApp(`<!DOCTYPE html><html><head><meta charset="utf-8"/><title>Y-FO-CC-008</title>
     <style>body{font-family:Arial;padding:24px} .ln{border-bottom:1px solid #000;min-width:180px;display:inline-block}</style></head><body>
     <div style="display:grid;grid-template-columns:90px 1fr 160px;border:1px solid #000">
       <div style="padding:8px;text-align:center"><img src="${location.origin}/yazoo.png" height="44"/></div>
@@ -36,9 +35,6 @@ export function printRegistroCatado(h: Record<string, any> = {}) {
     <p>Verificado: <span class="ln">${d.verif || ''}</span></p>
     <p style="font-size:10px;display:flex;justify-content:space-between"><span>Y-FO-CS-001 Rev.: 01</span><span>Aprobado: 24/03/2026</span></p>
     </body></html>`)
-  w.document.close()
-  w.focus()
-  setTimeout(() => w.print(), 250)
 }
 
 export default function RegistroCatadoForm({ onCancel, onSave, initialData }: any) {
