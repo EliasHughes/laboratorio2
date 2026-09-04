@@ -1,11 +1,8 @@
 from fastapi import APIRouter
-from app.api import alerts
-from app.api import solutions
-from app.api import auth, users, roles, products, lots, movements, audit
-from app.api import forms
-from app.api import ehs
-
-
+from app.api import alerts, solutions, auth, users, roles
+from app.api import products, lots, movements, audit, forms, ehs
+from app.api import wms, purchases, receiving, withdrawals
+from app.api import approvals
 
 api_router = APIRouter()
 
@@ -20,3 +17,8 @@ api_router.include_router(alerts.router)
 api_router.include_router(solutions.router)
 api_router.include_router(forms.router)
 api_router.include_router(ehs.router)
+api_router.include_router(wms.router)
+api_router.include_router(purchases.router)
+api_router.include_router(receiving.router)
+api_router.include_router(withdrawals.router)
+api_router.include_router(approvals.router)

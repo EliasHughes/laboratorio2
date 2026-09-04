@@ -47,9 +47,12 @@ const SECTIONS: NavSection[] = [
     items: [
       { to: '/forms', icon: FileText, label: 'Formularios Y-FO', perm: 'forms:view' },
       { to: '/solutions', icon: Beaker, label: 'Soluciones internas', perm: 'solutions:view' },
-      { to: '/boards', icon: MapPinned, label: 'Ubicaciones calidad', perm: 'inventory:view' },
+      { to: '/boards', icon: MapPinned, label: 'Control De Cuarto', perm: 'inventory:view' },
       { to: '/withdrawals', icon: ArrowDownToLine, label: 'Retiros de laboratorio', perm: 'withdrawals:view' },
-      { to: '/approvals', icon: FileText, label: 'Aprobaciones', perm: 'forms:view' },    ],
+      { to: '/approvals', icon: FileText, label: 'Aprobaciones', perm: 'forms:view' },  
+      { to: '/lab', icon: Beaker, label: 'Almacén laboratorio', perm: 'inventory:view' },
+      ],
+      
   },
   {
     title: 'Inventario y almacenes',
